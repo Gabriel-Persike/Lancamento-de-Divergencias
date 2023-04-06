@@ -1,0 +1,86 @@
+.tab {
+    border: black 1px solid !important;
+    border-radius: 4px 4px 0 0 !important;
+}
+
+.fluig-style-guide .nav-tabs.nav-justified > li.in > a {
+    background-color: #58595b;
+    color: #fff;
+}
+
+.tab-content {
+    border: black solid 1px;
+    width: fit-content;
+    min-width: 100%;
+}
+
+textarea {
+    resize: vertical;
+}
+
+.block {
+    width: 100%;
+    height: 200px;
+}
+
+.marginAuto {
+    margin: auto;
+}
+
+.detailsShow {
+    background: url("details_open.png") no-repeat center;
+    cursor: pointer;
+    width: 30px;
+}
+.detailsHide {
+    background: url("details_close.png") no-repeat center;
+    cursor: pointer;
+    width: 30px;
+}
+
+.details {
+    height: 30px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.fit-content {
+    width: fit-content;
+}
+
+.labelFullWidth {
+    width: 100%;
+}
+
+.has-error {
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+    display: inline-block;
+    border: 1px red solid !important;
+    color: black !important;
+}
+
+.row.display-flex {
+    display: flex;
+    flex-wrap: wrap;
+}
+.fluig-style-guide .form-control[readonly] {
+    color: #555 !important;
+}
+
+
+.fluig-style-guide .switch.switch-labels .switch-input:checked + .switch-button:before {
+    content: "" !important;
+}
+
+.fluig-style-guide .switch.switch-labels .switch-button:before {
+    content: "" !important;
+}
+
+
+.coltabs {
+    padding-bottom: 0px;
+    width: 100%;
+}
