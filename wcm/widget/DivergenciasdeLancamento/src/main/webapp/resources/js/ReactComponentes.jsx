@@ -966,8 +966,6 @@ class ModalDetalhes extends React.Component {
         this.BuscaMovimento(1, this.props.Divergencia.Identificador);
     }
 
-    componentDidMount() {}
-
     BuscaMovimento(CODCOLIGADA, IDMOV) {
         Promise.all([BuscaMovimentoRM(CODCOLIGADA, IDMOV), BuscaItensMovimentoRM(CODCOLIGADA, IDMOV)])
             .then((retorno) => {
