@@ -28,12 +28,12 @@ textarea {
 }
 
 .detailsShow {
-    background: url("details_open.png") no-repeat center;
+    background: url("/DivergenciasdeLancamento/resources/images/details_open.png") no-repeat center;
     cursor: pointer;
     width: 30px;
 }
 .detailsHide {
-    background: url("details_close.png") no-repeat center;
+    background: url("/DivergenciasdeLancamento/resources/images/details_close.png") no-repeat center;
     cursor: pointer;
     width: 30px;
 }

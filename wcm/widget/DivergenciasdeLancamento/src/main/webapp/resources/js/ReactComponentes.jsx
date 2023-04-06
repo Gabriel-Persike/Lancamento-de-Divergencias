@@ -258,8 +258,9 @@ class Lancamento extends React.Component {
             }
 
             var Divergencia = {
-                Emissao: Movimento.DataEmissao,
+                Coligada: Movimento.Coligada,
                 Identificador: Movimento.IDMOV,
+                Emissao: Movimento.DataEmissao,
                 TipoMovimento: Movimento.CODTMV,
                 Filial: Movimento.Filial,
                 Criacao: Movimento.DataCriacao,
@@ -367,6 +368,10 @@ class Lancamento extends React.Component {
                 ]
             },
             {
+                label: "Nota Fiscal", //optGroup
+                options: [{ label: "Nota Fiscal de Serviço Pessoa Fisica", value: "Nota Fiscal de Serviço Pessoa Fisica" }]
+            },
+            {
                 label: "Aluguel", //optGroup
                 options: [
                     { label: "Período do Recibo de Aluguel", value: "Período do Recibo de Aluguel" },
@@ -419,8 +424,58 @@ class Lancamento extends React.Component {
                 ]
             },
             {
+                label: "Filial", //optGroup
+                options: [
+                    {
+                        label: "Documento Lançado na Filial Incorreta",
+                        value: "Documento Lançado na Filial Incorreta",
+                        optFields: [
+                            { label: "Filial Incorreta", type: "Filial" },
+                            { label: "Filial Correta", type: "Filial" }
+                        ]
+                    }
+                ]
+            },
+            {
+                label: "RDV",
+                options: [
+                    { label: "Documento RDV Ilegível", value: "Documento RDV Ilegível" },
+                    { label: "Itens do Documento RDV Ilegível", value: "Itens do Documento RDV Ilegível" },
+                    { label: "Valor do Documento RDV Ilegível", value: "Valor do Documento RDV Ilegível" },
+                    { label: "Ausência da Assinatura do Engenheiro no Espelho do RDV", value: "Ausência da Assinatura do Engenheiro no Espelho do RDV" },
+                    { label: "Ausência da Assinatura do Chefe de Escritório no Espelho do RDV", value: "Ausência da Assinatura do Chefe de Escritório no Espelho do RDV" },
+                    { label: "Ausência da Assinatura do Chefe de Escritório e Engenheiro no Espelho do RDV", value: "Ausência da Assinatura do Chefe de Escritório e Engenheiro no Espelho do RDV" },
+                    {
+                        label: "Produto do RDV Lançado no Sistema",
+                        value: "Produto do RDV Lançado no Sistema",
+                        optFields: [
+                            { label: "Produto Lançado", type: "Produto" },
+                            { label: "Produto Correto", type: "Produto" }
+                        ]
+                    },
+                    { label: "RDV sem Valor do Adiantamento Recebido", value: "RDV sem Valor do Adiantamento Recebido" },
+                    { label: "Ausência das Informações na Capa do RDV", value: "Ausência das Informações na Capa do RDV" },
+                    { label: "Carimbo RDV sem Descrição do Produto", value: "Carimbo RDV sem Descrição do Produto" },
+                    { label: "RDV não Enviado", value: "RDV não Enviado" }
+                ]
+            },
+            {
+                label: "Documento",
+                options: [
+                    { label: "Documento não Enviado", value: "Documento não Enviado" },
+                    { label: "Favor Enviar Original", value: "Favor Enviar Original" },
+                    { label: "Documento Ilegível", value: "Documento Ilegível" },
+                    { label: "O Documento não foi Lançado no Sistema", value: "O Documento não foi Lançado no Sistema" },
+                    { label: "Favor Enviar Comprovante de Pagamento", value: "Favor Enviar Comprovante de Pagamento" },
+                    { label: "Documento não Aceito na Contabilidade", value: "Documento não Aceito na Contabilidade" }
+                ]
+            },
+            {
                 label: "Outros",
-                options: [{ label: "Outros", value: "Outros" }]
+                options: [
+                 
+                    { label: "Outros", value: "Outros" }
+                ]
             }
         ];
 
@@ -453,6 +508,13 @@ class Lancamento extends React.Component {
                             <DepartamentoInput onChange={(e) => this.handleChangeParametrosDivergencia(field.label, e)} value={this.state[field.label]} />
                         ) : field.type == "date" ? (
                             <DateInput
+                                onChange={(e) => {
+                                    this.handleChangeParametrosDivergencia(field.label, e);
+                                }}
+                                value={this.state[field.label]}
+                            />
+                        ) : field.type == "Filial" ? (
+                            <FilialInput
                                 onChange={(e) => {
                                     this.handleChangeParametrosDivergencia(field.label, e);
                                 }}
@@ -714,6 +776,7 @@ class BuscadorDeMovimento extends React.Component {
                         onChange={(e) => {
                             this.setState({ CODCOLIGADA: e.target.value });
                             BuscaProdutos(e.target.value);
+                            BuscaFiliais(e.target.value);
                         }}
                     >
                         <option value=""></option>
@@ -837,7 +900,30 @@ class DepartamentoInput extends React.Component {
                 <antd.Select
                     options={Departamentos}
                     showSearch
-                    value={this.props.CategoriaDivergencia}
+                    value={this.props.value}
+                    filterOption={(input, option) => {
+                        if (option.children) {
+                            return option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
+                        } else if (option.label) {
+                            return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
+                        }
+                    }}
+                    onChange={(e) => this.props.onChange(e)}
+                    style={{ width: "100%" }}
+                />
+            </div>
+        );
+    }
+}
+
+class FilialInput extends React.Component {
+    render() {
+        return (
+            <div>
+                <antd.Select
+                    options={Filiais}
+                    showSearch
+                    value={this.props.value}
                     filterOption={(input, option) => {
                         if (option.children) {
                             return option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
@@ -961,9 +1047,10 @@ class ModalDetalhes extends React.Component {
         super(props);
         this.state = {
             Movimento: "",
-            Itens: ""
+            Itens: "",
+            detailsIsShown: true
         };
-        this.BuscaMovimento(1, this.props.Divergencia.Identificador);
+        this.BuscaMovimento(this.props.Divergencia.Coligada, this.props.Divergencia.Identificador);
     }
 
     BuscaMovimento(CODCOLIGADA, IDMOV) {
@@ -1061,13 +1148,38 @@ class ModalDetalhes extends React.Component {
         return <tbody>{list}</tbody>;
     }
 
-    render() {
-        console.log(this.state.Movimento);
-        console.log(this.state.Itens);
-        console.log(this.props.Divergencia);
+    renderOptFieldsCategoria() {
+        var list = [];
 
+        var optFields = this.props.Divergencia.Divergencia.CamposCategoria;
+
+        for (const campo of optFields) {
+            list.push(
+                <div className="col-md-4">
+                    <b>{campo.label}:</b>
+                    <span>{campo.value}</span>
+                </div>
+            );
+        }
+
+        return list;
+    }
+
+    handleClickDetails(e) {
+        if (this.state.detailsIsShown) {
+            $(e.target).closest(".panel").find(".panel-body").slideUp();
+        } else {
+            $(e.target).closest(".panel").find(".panel-body").slideDown();
+        }
+
+        this.setState({
+            detailsIsShown: !this.state.detailsIsShown
+        });
+    }
+
+    render() {
         var coligada = Coligadas.find((e) => {
-            return e.CODCOLIGADA == this.props.Coligada;
+            return e.CODCOLIGADA == this.props.Divergencia.Coligada;
         });
         if (coligada == undefined) {
             coligada = {
@@ -1077,12 +1189,20 @@ class ModalDetalhes extends React.Component {
         }
 
         return (
-            <div className="panel panel-primary">
-                <div className="panel-heading">
-                    <h3 className="panel-title">Divergência</h3>
-                </div>
-                <div className="panel-body">
-                    <div id="Lancamento">
+            <div>
+                <div className="panel panel-primary" id="Lancamento">
+                    <div
+                        className="panel-heading"
+                        onClick={(e) => {
+                            this.handleClickDetails(e);
+                        }}
+                    >
+                        <div className={"details " + (this.state.detailsIsShown == true ? "detailsHide" : "detailsShow")}></div>
+                        <h4 className="panel-title" style={{ display: "inline-block", verticalAlign: "middle" }}>
+                            Lançamento
+                        </h4>
+                    </div>
+                    <div className="panel-body">
                         <div className="row">
                             <div className="col-md-3">
                                 <div>
@@ -1154,6 +1274,24 @@ class ModalDetalhes extends React.Component {
                                     </table>
                                 )}
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="panel panel-primary" id="Divergencia">
+                    <div className="panel-heading">
+                        <h3 className="panel-title">Divergência</h3>
+                    </div>
+                    <div className="panel-body">
+                        <div>
+                            <h3>{this.props.Divergencia.Divergencia.CategoriaDivergencia}</h3>
+                        </div>
+                        <div className="row">{this.renderOptFieldsCategoria()}</div>
+                        <br />
+                        <div>
+                            <b>Observação: </b>
+                            <p>{this.props.Divergencia.Divergencia.ObservacaoDivergencia}</p>
+                            {/* <textarea className="form-control" rows="4" value={this.props.Divergencia.Divergencia.ObservacaoDivergencia}/> */}
                         </div>
                     </div>
                 </div>

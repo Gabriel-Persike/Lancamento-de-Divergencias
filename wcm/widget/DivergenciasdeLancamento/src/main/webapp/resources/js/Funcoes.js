@@ -1,6 +1,8 @@
 Coligadas = [];
 Produtos = [];
 Departamentos = [];
+Filiais = [];
+
 function makeid(length) {
 	var result = '';
 	var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -135,7 +137,7 @@ function BuscaColigadas() {
 
 function AbreModalDetalhes(Divergencia) {
 	var myModal = FLUIGC.modal({
-		title: '',
+		title: 'Divergência',
 		content: '<div id="rootModalDetalhes"></div>',
 		id: 'fluig-modal',
 		size: 'full',
@@ -264,6 +266,22 @@ function BuscaDepartamentos() {
 				Departamentos.push({
 					label: departamento.CODDEPARTAMENTO + " - " + departamento.NOME,
 					value: departamento.CODDEPARTAMENTO + " - " + departamento.NOME
+				});
+			}
+		})
+	});
+}
+
+function BuscaFiliais(CODCOLIGADA) {
+	DatasetFactory.getDataset("GFILIAL", null,[
+		DatasetFactory.createConstraint("CODCOLIGADA", CODCOLIGADA, CODCOLIGADA, ConstraintType.MUST)
+	], null, {
+		success: (ds => {
+			Filiais = [];
+			for (const filial of ds.values) {
+				Filiais.push({
+					label: filial.CODFILIAL + " - " + filial.NOMEFANTASIA,
+					value: filial.CODFILIAL + " - " + filial.NOMEFANTASIA
 				});
 			}
 		})
