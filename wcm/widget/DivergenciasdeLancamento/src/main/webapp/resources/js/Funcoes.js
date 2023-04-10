@@ -135,22 +135,28 @@ function BuscaColigadas() {
 	});
 }
 
-function AbreModalDetalhes(Divergencia) {
+function AbreModalDetalhes(Divergencia, onCancelarDivergencia) {
 	var myModal = FLUIGC.modal({
 		title: 'Divergência',
 		content: '<div id="rootModalDetalhes"></div>',
 		id: 'fluig-modal',
 		size: 'full',
-		actions: [{
-			'label': 'Close',
-			'autoClose': true
-		}]
+		actions: [
+			{
+				"label": "Cancelar",
+				"classType": "btn-danger",
+				"bind":"Cancelar-Divergencia",
+				'autoClose': true
+			}, {
+				'label': 'Fechar',
+				'autoClose': true
+			}
+		]
 	}, function (err, data) {
 		if (err) {
 			// do error handling
 		} else {
-			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia }), document.querySelector("#rootModalDetalhes"));
-
+			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia, onCancelarDivergencia: onCancelarDivergencia }), document.querySelector("#rootModalDetalhes"));
 		}
 	});
 }
@@ -273,7 +279,7 @@ function BuscaDepartamentos() {
 }
 
 function BuscaFiliais(CODCOLIGADA) {
-	DatasetFactory.getDataset("GFILIAL", null,[
+	DatasetFactory.getDataset("GFILIAL", null, [
 		DatasetFactory.createConstraint("CODCOLIGADA", CODCOLIGADA, CODCOLIGADA, ConstraintType.MUST)
 	], null, {
 		success: (ds => {

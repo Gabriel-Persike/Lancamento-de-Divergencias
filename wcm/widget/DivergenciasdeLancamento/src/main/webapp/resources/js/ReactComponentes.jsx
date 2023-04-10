@@ -3,20 +3,9 @@ class InformacoesIniciais extends React.Component {
         super(props);
 
         this.state = {
-            Divergencias: [
-                {
-                    Emissao: "28/03/2023",
-                    Identificador: "115152",
-                    TipoMovimento: "1.1.02",
-                    Filial: 1,
-                    Criacao: "28/03/2023",
-                    Fornecedor: "Fornecedor",
-                    Usuario: "Mayara",
-                    Divergencia: {
-                        CategoriaDivergencia: "CNPJ "
-                    }
-                }
-            ]
+            Divergencias: [],
+            DivergenciasCanceladas: [],
+            MostraDivergenciasAtivas: true
         };
     }
 
@@ -31,6 +20,26 @@ class InformacoesIniciais extends React.Component {
                 console.log(JSON.stringify(this.state.Divergencias));
             }
         );
+    }
+
+    handleCancelarDivergencia(id) {
+        console.log("handleCancelarDivergencia: " + id);
+
+        var Divergencias = this.state.Divergencias.slice();
+
+        var found = Divergencias.find((obj) => obj.ID == id);
+
+        if (found) {
+            Divergencias = Divergencias.filter((obj) => obj.ID != id);
+            var DivergenciasCanceladas = this.state.DivergenciasCanceladas.slice();
+            found.status = "Cancelado"
+            DivergenciasCanceladas.push(found);
+
+            this.setState({
+                Divergencias: Divergencias,
+                DivergenciasCanceladas: DivergenciasCanceladas
+            });
+        }
     }
 
     render() {
@@ -54,7 +63,15 @@ class InformacoesIniciais extends React.Component {
                             <Lancamento onLancamentoDivergencia={(e) => this.handleLancamentoDivergencia(e)} />
                         </div>
                         <div className="tab-pane" id="tabItens">
-                            <ListaDivergencias Divergencias={this.state.Divergencias} />
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => {
+                                    this.setState({ MostraDivergenciasAtivas: !this.state.MostraDivergenciasAtivas });
+                                }}
+                            >
+                                ChangeView
+                            </button>
+                            <ListaDivergencias Divergencias={this.state.MostraDivergenciasAtivas == true ? this.state.Divergencias : this.state.DivergenciasCanceladas} onCancelarDivergencia={(ID) => this.handleCancelarDivergencia(ID)} />
                         </div>
                     </div>
                 </div>
@@ -83,7 +100,7 @@ class LinhaDivergencia extends React.Component {
                 <td>{this.props.Divergencia.Usuario}</td>
                 <td>{divergencia}</td>
                 <td style={{ textAlign: "center" }}>
-                    <button className="btn btn-primary" onClick={() => AbreModalDetalhes(this.props.Divergencia)}>
+                    <button className={"btn " + (this.props.Divergencia.status == "Cancelado" ? "btn-danger" : "btn-primary")} onClick={() => AbreModalDetalhes(this.props.Divergencia, this.props.onCancelarDivergencia)}>
                         Detalhes
                     </button>
                 </td>
@@ -94,9 +111,9 @@ class LinhaDivergencia extends React.Component {
 
 class ListaDivergencias extends React.Component {
     renderDivergencias() {
-        const Divergencias = this.props.Divergencias;
+        var Divergencias = this.props.Divergencias;
         return Divergencias.map((divergencia) => {
-            return <LinhaDivergencia key={divergencia.Identificador} Divergencia={divergencia} />;
+            return <LinhaDivergencia key={divergencia.Identificador} Divergencia={divergencia} onCancelarDivergencia={(ID) => this.props.onCancelarDivergencia(ID)} />;
         });
     }
 
@@ -258,6 +275,7 @@ class Lancamento extends React.Component {
             }
 
             var Divergencia = {
+                ID: makeid(6),
                 Coligada: Movimento.Coligada,
                 Identificador: Movimento.IDMOV,
                 Emissao: Movimento.DataEmissao,
@@ -273,6 +291,7 @@ class Lancamento extends React.Component {
                     ObservacaoDivergencia: this.state.ObservacaoDivergencia
                 }
             };
+            console.log(Divergencia);
             this.props.onLancamentoDivergencia(Divergencia);
 
             this.setState({
@@ -472,10 +491,7 @@ class Lancamento extends React.Component {
             },
             {
                 label: "Outros",
-                options: [
-                 
-                    { label: "Outros", value: "Outros" }
-                ]
+                options: [{ label: "Outros", value: "Outros" }]
             }
         ];
 
@@ -1051,6 +1067,8 @@ class ModalDetalhes extends React.Component {
             detailsIsShown: true
         };
         this.BuscaMovimento(this.props.Divergencia.Coligada, this.props.Divergencia.Identificador);
+
+        this.CancelaDivergencia = this.CancelaDivergencia.bind(this); //Bind necessaria pra usar a function em conjunto com o jQuery na funcao componentDidMount
     }
 
     BuscaMovimento(CODCOLIGADA, IDMOV) {
@@ -1065,8 +1083,9 @@ class ModalDetalhes extends React.Component {
                 DATAEMISSAO = DATAEMISSAO.split(" ")[0].split("-").reverse().join("/");
 
                 var movimento = {
-                    Coligada: this.state.CODCOLIGADA,
-                    IDMOV: this.state.IDMOV,
+                    ID: this.props.Divergencia.ID,
+                    Coligada: this.props.Divergencia.Coligada,
+                    IDMOV: this.props.Divergencia.Identificador,
                     Filial: movimentoRM.CODFILIAL,
                     Fornecedor: movimentoRM.FORNECEDOR,
                     CGCCFO: movimentoRM.CGCCFO,
@@ -1146,6 +1165,20 @@ class ModalDetalhes extends React.Component {
         }
 
         return <tbody>{list}</tbody>;
+    }
+
+    CancelaDivergencia() {
+        console.log("Cancelar Divergencia!");
+        console.log(this.state.Movimento);
+        console.log(this.state.Itens);
+
+        this.props.onCancelarDivergencia(this.state.Movimento.ID);
+    }
+
+    componentDidMount() {
+        $("[Cancelar-Divergencia]").on("click", { CancelaDivergencia: this.CancelaDivergencia }, function (event) {
+            event.data.CancelaDivergencia();
+        });
     }
 
     renderOptFieldsCategoria() {
@@ -1292,6 +1325,14 @@ class ModalDetalhes extends React.Component {
                             <b>Observação: </b>
                             <p>{this.props.Divergencia.Divergencia.ObservacaoDivergencia}</p>
                             {/* <textarea className="form-control" rows="4" value={this.props.Divergencia.Divergencia.ObservacaoDivergencia}/> */}
+                        </div>
+                        <br />
+                        <br />
+                        <div>
+                            <label htmlFor="" style={{ color: "red" }}>
+                                Cancelar Divergência:{" "}
+                            </label>
+                            <textarea rows="4" className="form-control form-control-danger"></textarea>
                         </div>
                     </div>
                 </div>

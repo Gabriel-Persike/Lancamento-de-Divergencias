@@ -84,3 +84,8 @@ textarea {
     padding-bottom: 0px;
     width: 100%;
 }
+
+.form-control-danger{
+    color: red !important;
+    border-color: red !important;
+}
