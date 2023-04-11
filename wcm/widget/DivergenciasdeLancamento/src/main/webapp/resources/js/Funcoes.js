@@ -2,7 +2,7 @@ Coligadas = [];
 Produtos = [];
 Departamentos = [];
 Filiais = [];
-
+myModal = null;
 function makeid(length) {
 	var result = '';
 	var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -136,7 +136,7 @@ function BuscaColigadas() {
 }
 
 function AbreModalDetalhes(Divergencia, onCancelarDivergencia) {
-	var myModal = FLUIGC.modal({
+	myModal = FLUIGC.modal({
 		title: 'Divergência',
 		content: '<div id="rootModalDetalhes"></div>',
 		id: 'fluig-modal',
@@ -145,8 +145,7 @@ function AbreModalDetalhes(Divergencia, onCancelarDivergencia) {
 			{
 				"label": "Cancelar",
 				"classType": "btn-danger",
-				"bind":"Cancelar-Divergencia",
-				'autoClose': true
+				"bind": "Cancelar-Divergencia"
 			}, {
 				'label': 'Fechar',
 				'autoClose': true
@@ -286,10 +285,20 @@ function BuscaFiliais(CODCOLIGADA) {
 			Filiais = [];
 			for (const filial of ds.values) {
 				Filiais.push({
-					label: filial.CODFILIAL + " - " + filial.NOMEFANTASIA,
-					value: filial.CODFILIAL + " - " + filial.NOMEFANTASIA
+					CODFILIAL: filial.CODFILIAL,
+					FILIAL: filial.NOMEFANTASIA
 				});
 			}
 		})
 	});
+}
+
+function getDateNow() {
+	var date = new Date();
+
+	var day = date.getDate().toString().padStart(2,"0");
+	var month =(date.getMonth() + 1).toString().padStart(2,"0"); 
+	var year = date.getFullYear();
+
+	return day + "/" + month + "/" + year;
 }

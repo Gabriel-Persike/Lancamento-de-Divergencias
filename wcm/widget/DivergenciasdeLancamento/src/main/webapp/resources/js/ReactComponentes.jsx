@@ -22,7 +22,7 @@ class InformacoesIniciais extends React.Component {
         );
     }
 
-    handleCancelarDivergencia(id) {
+    handleCancelarDivergencia(id, Motivo) {
         console.log("handleCancelarDivergencia: " + id);
 
         var Divergencias = this.state.Divergencias.slice();
@@ -32,7 +32,8 @@ class InformacoesIniciais extends React.Component {
         if (found) {
             Divergencias = Divergencias.filter((obj) => obj.ID != id);
             var DivergenciasCanceladas = this.state.DivergenciasCanceladas.slice();
-            found.status = "Cancelado"
+            found.status = "Cancelado";
+            found.MotivoCancelamento = Motivo;
             DivergenciasCanceladas.push(found);
 
             this.setState({
@@ -71,7 +72,7 @@ class InformacoesIniciais extends React.Component {
                             >
                                 ChangeView
                             </button>
-                            <ListaDivergencias Divergencias={this.state.MostraDivergenciasAtivas == true ? this.state.Divergencias : this.state.DivergenciasCanceladas} onCancelarDivergencia={(ID) => this.handleCancelarDivergencia(ID)} />
+                            <ListaDivergencias Divergencias={this.state.MostraDivergenciasAtivas == true ? this.state.Divergencias : this.state.DivergenciasCanceladas} onCancelarDivergencia={(ID, Motivo) => this.handleCancelarDivergencia(ID, Motivo)} />
                         </div>
                     </div>
                 </div>
@@ -90,7 +91,7 @@ class LinhaDivergencia extends React.Component {
         return (
             <tr>
                 <td>{this.props.Divergencia.Emissao}</td>
-                <td>{this.props.Divergencia.Identificador}</td>
+                {/* <td>{this.props.Divergencia.Identificador}</td> */}
                 <td>{this.props.Divergencia.TipoMovimento}</td>
                 <td>{this.props.Divergencia.Filial}</td>
                 <td>{this.props.Divergencia.Criacao}</td>
@@ -100,9 +101,15 @@ class LinhaDivergencia extends React.Component {
                 <td>{this.props.Divergencia.Usuario}</td>
                 <td>{divergencia}</td>
                 <td style={{ textAlign: "center" }}>
-                    <button className={"btn " + (this.props.Divergencia.status == "Cancelado" ? "btn-danger" : "btn-primary")} onClick={() => AbreModalDetalhes(this.props.Divergencia, this.props.onCancelarDivergencia)}>
-                        Detalhes
-                    </button>
+                    {this.props.Divergencia.status == "Cancelado" ? (
+                        <button className={"btn btn-danger bs-docs-popover-hover"} onClick={() => AbreModalDetalhes(this.props.Divergencia, this.props.onCancelarDivergencia)} data-toggle={"popover"} data-content={this.props.Divergencia.MotivoCancelamento}>
+                            Detalhes
+                        </button>
+                    ) : (
+                        <button className={"btn btn-primary"} onClick={() => AbreModalDetalhes(this.props.Divergencia, this.props.onCancelarDivergencia)}>
+                            Detalhes
+                        </button>
+                    )}
                 </td>
             </tr>
         );
@@ -113,8 +120,12 @@ class ListaDivergencias extends React.Component {
     renderDivergencias() {
         var Divergencias = this.props.Divergencias;
         return Divergencias.map((divergencia) => {
-            return <LinhaDivergencia key={divergencia.Identificador} Divergencia={divergencia} onCancelarDivergencia={(ID) => this.props.onCancelarDivergencia(ID)} />;
+            return <LinhaDivergencia key={divergencia.ID} Divergencia={divergencia} onCancelarDivergencia={(ID, Motivo) => this.props.onCancelarDivergencia(ID, Motivo)} />;
         });
+    }
+
+    componentDidUpdate() {
+        FLUIGC.popover(".bs-docs-popover-hover", { trigger: "hover", placement: "auto" });
     }
 
     render() {
@@ -124,12 +135,12 @@ class ListaDivergencias extends React.Component {
                     <h3 className="panel-title">Divergências/Correções</h3>
                 </div>
                 <div className="panel-body">
-                    <table className="table table-bordered table-striped">
+                    <table className="table table-bordered table-striped table-condensed">
                         <thead>
                             <tr>
                                 <th>Emissão</th>
-                                <th>Identificador</th>
-                                <th>Tipo Mov</th>
+                                {/* <th>Identificador</th> */}
+                                <th>TP Mov</th>
                                 <th>Filial</th>
                                 <th>Criação</th>
                                 <th>Fornecedor</th>
@@ -146,14 +157,14 @@ class ListaDivergencias extends React.Component {
     }
 }
 
-function Item({ ItemIndex, Produto, Quantidade, ValorUnit, CODUND }) {
+function Item({ ItemIndex, CodigoProduto, Produto, Quantidade, ValorUnit, CODUND }) {
     return (
         <tr>
             <td>
                 <span>{ItemIndex + 1}</span>
             </td>
             <td>
-                <span>{Produto}</span>
+                <span>{CodigoProduto + " - " + Produto}</span>
             </td>
             <td>
                 <MoneySpan text={Quantidade + CODUND} />
@@ -281,7 +292,7 @@ class Lancamento extends React.Component {
                 Emissao: Movimento.DataEmissao,
                 TipoMovimento: Movimento.CODTMV,
                 Filial: Movimento.Filial,
-                Criacao: Movimento.DataCriacao,
+                Criacao: getDateNow(),
                 Fornecedor: Movimento.Fornecedor,
                 CGCCFO: Movimento.CGCCFO,
                 Usuario: Movimento.Usuario,
@@ -306,7 +317,8 @@ class Lancamento extends React.Component {
                     Usuario: ""
                 },
                 Itens: [],
-                CategoriaDivergencia: ""
+                CategoriaDivergencia: "",
+                ObservacaoDivergencia: ""
             });
             FLUIGC.toast({
                 title: "Divergência Lançada!!",
@@ -350,6 +362,84 @@ class Lancamento extends React.Component {
                 ]
             },
             {
+                label: "Itens", //optGroup
+                options: [
+                    {
+                        label: "Descrição Incompleta",
+                        value: "Descrição Incompleta"
+                    },
+                    {
+                        label: "Os Itens não estão Lançados Separadamente",
+                        value: "Os Itens não estão Lançados Separadamente"
+                    },
+                    {
+                        label: "Produto/Classificação Financeira",
+                        value: "Produto/Classificação Financeira",
+                        optFields: [
+                            { label: "Lançado: ", type: "Produto" },
+                            { label: "Correto: ", type: "Produto" }
+                        ]
+                    }
+                ]
+            },
+            {
+                label: "Lançamento", //optGroup
+                options: [
+                    {
+                        label: "Documento Lançado na Filial Incorreta",
+                        value: "Documento Lançado na Filial Incorreta",
+                        optFields: [
+                            { label: "Filial Incorreta", type: "Filial" },
+                            { label: "Filial Correta", type: "Filial" }
+                        ]
+                    },
+                    {
+                        label: "Lançamento no Fornecedor Incorreto",
+                        value: "Lançamento no Fornecedor Incorreto",
+                        optFields: [
+                            { label: "CNPJ Lançado: ", type: "CPF/CNPJ" },
+                            { label: "CNPJ Correto: ", type: "CPF/CNPJ" }
+                        ]
+                    },
+                    {
+                        label: "Emissão Lançada no Sistema",
+                        value: "Emissão Lançada no Sistema",
+                        optFields: [
+                            { label: "Emissão Lançada: ", type: "date" },
+                            { label: "Emissão Correta: ", type: "date" }
+                        ]
+                    },
+                    {
+                        label: "Nº do Documento Lançado no Sistema",
+                        value: "Nº do Documento Lançado no Sistema",
+                        optFields: [
+                            { label: "Nº do Documento Lançado: ", type: "text" },
+                            { label: "Nº do Documento Correto: ", type: "text" }
+                        ]
+                    },
+                    {
+                        label: "Série da Nota Fiscal Lançada no Sistema",
+                        value: "Série da Nota Fiscal Lançada no Sistema",
+                        optFields: [
+                            { label: "Série da Nota Fiscal Lançada: ", type: "text" },
+                            { label: "Série da Nota Fiscal Correta: ", type: "text" }
+                        ]
+                    },
+                    {
+                        label: "Local da Prestação do Serviço Preenchido Incorretamente no Sistema",
+                        value: "Local da Prestação do Serviço Preenchido Incorretamente no Sistema"
+                    },
+                    {
+                        label: "Valor Lançado no Sistema",
+                        value: "Valor Lançado no Sistema",
+                        optFields: [
+                            { label: "Valor Lançado: ", type: "valor" },
+                            { label: "Valor Correto: ", type: "valor" }
+                        ]
+                    }
+                ]
+            },
+            {
                 label: "Carimbo", //optGroup
                 options: [
                     { label: "Carimbo Incompleto", value: "Carimbo Incompleto" },
@@ -372,12 +462,18 @@ class Lancamento extends React.Component {
                 ]
             },
             {
-                label: "Assinatura", //optGroup
-                options: [{ label: "NF/Recibo/Guia sem Assinatura do Chefe de Escritório e Engenheiro", value: "NF/Recibo/Guia sem Assinatura do Chefe de Escritório e Engenheiro" }]
-            },
-            {
                 label: "Tipo de Movimento", //optGroup
-                options: [{ label: "Devido a Nnatureza da Operação a NF não Deveria ter sido Lançada Neste Tipo de Movimento", value: "Devido a Nnatureza da Operação a NF não Deveria ter sido Lançada Neste Tipo de Movimento" }]
+                options: [
+                    { label: "Devido a Nnatureza da Operação a NF não Deveria ter sido Lançada Neste Tipo de Movimento", value: "Devido a Nnatureza da Operação a NF não Deveria ter sido Lançada Neste Tipo de Movimento" },
+                    {
+                        label: "Documento Lançado no Tipo de Movimento Incorreto",
+                        value: "Documento Lançado no Tipo de Movimento Incorreto",
+                        optFields: [
+                            { label: "Tipo de Movimento Lançado: ", type: "text" },
+                            { label: "Tipo de Movimento Correto: ", type: "text" }
+                        ]
+                    }
+                ]
             },
             {
                 label: "Coligada", //optGroup
@@ -388,7 +484,14 @@ class Lancamento extends React.Component {
             },
             {
                 label: "Nota Fiscal", //optGroup
-                options: [{ label: "Nota Fiscal de Serviço Pessoa Fisica", value: "Nota Fiscal de Serviço Pessoa Fisica" }]
+                options: [
+                    { label: "Nota Fiscal de Serviço Pessoa Fisica", value: "Nota Fiscal de Serviço Pessoa Fisica" },
+                    { label: "Ausência do CNPJ na Nota Fiscal/Recibo de Aluguel", value: "Ausência do CNPJ na Nota Fiscal/Recibo de Aluguel" },
+                    { label: "Nota Fiscal sem Emissão", value: "Nota Fiscal sem Emissão" },
+                    { label: "Ausência dos Dados da Castilho na Nota Fiscal/Cupom", value: "Ausência dos Dados da Castilho na Nota Fiscal/Cupom" },
+                    { label: "Nota Fiscal/Cupom não Possui Carimbo", value: "Nota Fiscal/Cupom não Possui Carimbo" },
+                    { label: "NF/Recibo/Guia/Cupom sem Assinatura do Chefe de Escritório e Engenheiro", value: "NF/Recibo/Guia/Cupom sem Assinatura do Chefe de Escritório e Engenheiro" }
+                ]
             },
             {
                 label: "Aluguel", //optGroup
@@ -439,19 +542,71 @@ class Lancamento extends React.Component {
                     {
                         label: "Recibo de Aluguel sem o Valor do IRRF",
                         value: "Recibo de Aluguel sem o Valor do IRRF"
+                    },
+                    {
+                        label: "Recibo de Aluguel de Pessoa Jurídica com Destaque de IR",
+                        value: "Recibo de Aluguel de Pessoa Jurídica com Destaque de IR"
                     }
                 ]
             },
             {
-                label: "Filial", //optGroup
+                label: "Imposto", //optGroup
                 options: [
                     {
-                        label: "Documento Lançado na Filial Incorreta",
-                        value: "Documento Lançado na Filial Incorreta",
+                        label: "Valor Incorreto do IRRF Lançado no Sistema",
+                        value: "Valor Incorreto do IRRF Lançado no Sistema",
                         optFields: [
-                            { label: "Filial Incorreta", type: "Filial" },
-                            { label: "Filial Correta", type: "Filial" }
+                            { label: "Valor Lançado", type: "valor" },
+                            { label: "Valor Correto", type: "valor" }
                         ]
+                    },
+                    {
+                        label: "Valor Incorreto do PIS/COFINS/CSLL Lançado no Sistema",
+                        value: "Valor Incorreto do PIS/COFINS/CSLL Lançado no Sistema",
+                        optFields: [
+                            { label: "Valor Lançado", type: "valor" },
+                            { label: "Valor Correto", type: "valor" }
+                        ]
+                    },
+                    {
+                        label: "Valor Incorreto do ISSRF Lançado no Sistema",
+                        value: "Valor Incorreto do ISSRF Lançado no Sistema",
+                        optFields: [
+                            { label: "Valor Lançado", type: "valor" },
+                            { label: "Valor Correto", type: "valor" }
+                        ]
+                    },
+                    {
+                        label: "Valor Incorreto do INSS Lançado no Sistema",
+                        value: "Valor Incorreto do INSS Lançado no Sistema",
+                        optFields: [
+                            { label: "Valor Lançado", type: "valor" },
+                            { label: "Valor Correto", type: "valor" }
+                        ]
+                    },
+                    {
+                        label: "INSS não Lançado no Sistema",
+                        value: "INSS não Lançado no Sistema"
+                    },
+                    {
+                        label: "IRRF não Lançado no Sistema",
+                        value: "IRRF não Lançado no Sistema"
+                    },
+                    {
+                        label: "PIS/COFINS/CSLL não Lançado no Sistema",
+                        value: "PIS/COFINS/CSLL não Lançado no Sistema"
+                    },
+                    {
+                        label: "ISS Retido não Lançado no Sistema",
+                        value: "ISS Retido não Lançado no Sistema"
+                    },
+                    {
+                        label: "Base de Calculo Incorreta",
+                        value: "Base de Calculo Incorreta"
+                    },
+                    {
+                        label: "Base de Calculo Preenchida Indevidamente",
+                        value: "Base de Calculo Preenchida Indevidamente"
                     }
                 ]
             },
@@ -464,6 +619,8 @@ class Lancamento extends React.Component {
                     { label: "Ausência da Assinatura do Engenheiro no Espelho do RDV", value: "Ausência da Assinatura do Engenheiro no Espelho do RDV" },
                     { label: "Ausência da Assinatura do Chefe de Escritório no Espelho do RDV", value: "Ausência da Assinatura do Chefe de Escritório no Espelho do RDV" },
                     { label: "Ausência da Assinatura do Chefe de Escritório e Engenheiro no Espelho do RDV", value: "Ausência da Assinatura do Chefe de Escritório e Engenheiro no Espelho do RDV" },
+                    { label: "Sem Nome do Beneficiário da Passagem", value: "Sem Nome do Beneficiário da Passagem" },
+
                     {
                         label: "Produto do RDV Lançado no Sistema",
                         value: "Produto do RDV Lançado no Sistema",
@@ -475,7 +632,41 @@ class Lancamento extends React.Component {
                     { label: "RDV sem Valor do Adiantamento Recebido", value: "RDV sem Valor do Adiantamento Recebido" },
                     { label: "Ausência das Informações na Capa do RDV", value: "Ausência das Informações na Capa do RDV" },
                     { label: "Carimbo RDV sem Descrição do Produto", value: "Carimbo RDV sem Descrição do Produto" },
-                    { label: "RDV não Enviado", value: "RDV não Enviado" }
+                    { label: "RDV não Enviado", value: "RDV não Enviado" },
+                    {
+                        label: "Produto no Espelho do RDV",
+                        value: "Produto no Espelho do RDV",
+                        optFields: [
+                            { label: "Produto Lançado: ", type: "Produto" },
+                            { label: "Produto Correto: ", type: "Produto" }
+                        ]
+                    },
+                    { label: "Carimbo RDV em Branco", value: "Carimbo RDV em Branco" },
+                    {
+                        label: "Emissão do RDV Divergente da Lançada no Sistema",
+                        value: "Emissão do RDV Divergente da Lançada no Sistema",
+                        optFields: [
+                            { label: "Emissão do RDV: ", type: "date" },
+                            { label: "Emissão Lançada no Sistema: ", type: "date" }
+                        ]
+                    },
+                    {
+                        label: "Nº do RDV Divergente do Lançado no Sistema",
+                        value: "Nº do RDV Divergente do Lançado no Sistema",
+                        optFields: [
+                            { label: "Nº do RDV: ", type: "text" },
+                            { label: "Nº Lançado no Sistema: ", type: "text" }
+                        ]
+                    },
+                    { label: "Período de Saída e Retorno da Viagem Incompátiveis", value: "Período de Saída e Retorno da Viagem Incompátiveis" },
+                    {
+                        label: "Valor Total do RDV Lançado no Sistema",
+                        value: "Valor Total do RDV Lançado no Sistema",
+                        optFields: [
+                            { label: "Valor Incorreto: ", type: "valor" },
+                            { label: "Valor Correto do RDV: ", type: "valor" }
+                        ]
+                    }
                 ]
             },
             {
@@ -491,7 +682,20 @@ class Lancamento extends React.Component {
             },
             {
                 label: "Outros",
-                options: [{ label: "Outros", value: "Outros" }]
+                options: [
+                    { label: "Outros", value: "Outros" },
+                    {
+                        label: "Enviada Apenas Parte da Nota Fiscal",
+                        value: "Enviada Apenas Parte da Nota Fiscal",
+                        optFields: [
+                            {
+                                label: "Quantidade de Folhas Enviadas/Total",
+                                type: "text"
+                            }
+                        ]
+                    },
+                    { label: "Documento não Deveria ser Lançado no Sistema pois não está no Nome da Castilho Engenharia", value: "Documento não Deveria ser Lançado no Sistema pois não está no Nome da Castilho Engenharia" }
+                ]
             }
         ];
 
@@ -555,7 +759,7 @@ class Lancamento extends React.Component {
         var list = [];
 
         for (const [Index, item] of Itens.entries()) {
-            list.push(<Item key={Index} ItemIndex={Index} Produto={item.Produto} Quantidade={item.Quantidade} ValorUnit={item.ValorUnit} CODUND={item.CODUND} />);
+            list.push(<Item key={Index} ItemIndex={Index} CodigoProduto={item.CodigoProduto} Produto={item.Produto} Quantidade={item.Quantidade} ValorUnit={item.ValorUnit} CODUND={item.CODUND} />);
         }
 
         return <tbody>{list}</tbody>;
@@ -570,6 +774,13 @@ class Lancamento extends React.Component {
                 CODCOLIGADA: "",
                 NOME: ""
             };
+        }
+
+        var filial = Filiais.find((e) => e.CODFILIAL == this.state.Movimento.Filial);
+        if (filial) {
+            filial = filial.CODFILIAL + " - " + filial.FILIAL;
+        } else {
+            filial = "";
         }
 
         return (
@@ -593,7 +804,7 @@ class Lancamento extends React.Component {
                                 <div className="col-md-3">
                                     <div>
                                         <b>Filial: </b>
-                                        <span>{this.state.Movimento.Filial}</span>
+                                        <span>{filial}</span>
                                     </div>
                                     <br />
                                 </div>
@@ -934,10 +1145,18 @@ class DepartamentoInput extends React.Component {
 
 class FilialInput extends React.Component {
     render() {
+        var optionsFiliais = [];
+        for (const Filial of Filiais) {
+            optionsFiliais.push({
+                label: Filial.CODFILIAL + " - " + Filial.FILIAL,
+                value: Filial.CODFILIAL + " - " + Filial.FILIAL
+            });
+        }
+
         return (
             <div>
                 <antd.Select
-                    options={Filiais}
+                    options={optionsFiliais}
                     showSearch
                     value={this.props.value}
                     filterOption={(input, option) => {
@@ -1064,11 +1283,14 @@ class ModalDetalhes extends React.Component {
         this.state = {
             Movimento: "",
             Itens: "",
-            detailsIsShown: true
+            detailsIsShownLancamento: true,
+            detailsIsShownDivergencia: true,
+            MotivoCancelamento: ""
         };
         this.BuscaMovimento(this.props.Divergencia.Coligada, this.props.Divergencia.Identificador);
 
         this.CancelaDivergencia = this.CancelaDivergencia.bind(this); //Bind necessaria pra usar a function em conjunto com o jQuery na funcao componentDidMount
+        this.getMotivoCancelamento = this.getMotivoCancelamento.bind(this); //Bind necessaria pra usar a function em conjunto com o jQuery na funcao componentDidMount
     }
 
     BuscaMovimento(CODCOLIGADA, IDMOV) {
@@ -1161,7 +1383,7 @@ class ModalDetalhes extends React.Component {
         var list = [];
 
         for (const [Index, item] of Itens.entries()) {
-            list.push(<Item key={Index} ItemIndex={Index} Produto={item.Produto} Quantidade={item.Quantidade} ValorUnit={item.ValorUnit} CODUND={item.CODUND} />);
+            list.push(<Item key={Index} ItemIndex={Index} CodigoProduto={item.CodigoProduto} Produto={item.Produto} Quantidade={item.Quantidade} ValorUnit={item.ValorUnit} CODUND={item.CODUND} />);
         }
 
         return <tbody>{list}</tbody>;
@@ -1172,12 +1394,53 @@ class ModalDetalhes extends React.Component {
         console.log(this.state.Movimento);
         console.log(this.state.Itens);
 
-        this.props.onCancelarDivergencia(this.state.Movimento.ID);
+        this.props.onCancelarDivergencia(this.state.Movimento.ID, this.state.MotivoCancelamento);
+    }
+
+    getMotivoCancelamento() {
+        return this.state.MotivoCancelamento;
     }
 
     componentDidMount() {
-        $("[Cancelar-Divergencia]").on("click", { CancelaDivergencia: this.CancelaDivergencia }, function (event) {
-            event.data.CancelaDivergencia();
+        $("[Cancelar-Divergencia]").on("click", { CancelaDivergencia: this.CancelaDivergencia, MotivoCancelamento: this.getMotivoCancelamento }, function (event) {
+            console.log(event.data.MotivoCancelamento());
+            if (!event.data.MotivoCancelamento()) {
+                FLUIGC.toast({
+                    title: "O Motivo do Cancelamento não foi Informado!",
+                    message: "",
+                    type: "warning"
+                });
+                return;
+            } else {
+                var myModal2 = FLUIGC.modal(
+                    {
+                        title: "Deseja Cancelar a Divergência?",
+                        content: "",
+                        id: "fluig-modal2",
+                        size: "large",
+                        actions: [
+                            {
+                                label: "Sim, Desejo Cancelar a Divergência",
+                                classType: "btn-danger",
+                                bind: "Confirma-Cancelar-Divergencia",
+                                autoClose: true
+                            },
+                            {
+                                label: "Não, Fechar sem Cancelar",
+                                autoClose: true
+                            }
+                        ]
+                    },
+                    function (err, data) {
+                        if (!err) {
+                            $("[Confirma-Cancelar-Divergencia]").on("click", function () {
+                                event.data.CancelaDivergencia();
+                                myModal.remove();
+                            });
+                        }
+                    }
+                );
+            }
         });
     }
 
@@ -1189,7 +1452,7 @@ class ModalDetalhes extends React.Component {
         for (const campo of optFields) {
             list.push(
                 <div className="col-md-4">
-                    <b>{campo.label}:</b>
+                    <b>{campo.label}: </b>
                     <span>{campo.value}</span>
                 </div>
             );
@@ -1198,16 +1461,24 @@ class ModalDetalhes extends React.Component {
         return list;
     }
 
-    handleClickDetails(e) {
-        if (this.state.detailsIsShown) {
-            $(e.target).closest(".panel").find(".panel-body").slideUp();
+    handleClickDetails(e, panel) {
+        var detailsIsShown = panel == "Lancamento" ? this.state.detailsIsShownLancamento : this.state.detailsIsShownDivergencia;
+
+        if (detailsIsShown) {
+            $(e.target).closest(".panel").find(".panel-body:first").slideUp();
         } else {
-            $(e.target).closest(".panel").find(".panel-body").slideDown();
+            $(e.target).closest(".panel").find(".panel-body:first").slideDown();
         }
 
-        this.setState({
-            detailsIsShown: !this.state.detailsIsShown
-        });
+        if (panel == "Lancamento") {
+            this.setState({
+                detailsIsShownLancamento: !this.state.detailsIsShownLancamento
+            });
+        } else {
+            this.setState({
+                detailsIsShownDivergencia: !this.state.detailsIsShownDivergencia
+            });
+        }
     }
 
     render() {
@@ -1221,16 +1492,23 @@ class ModalDetalhes extends React.Component {
             };
         }
 
+        var filial = Filiais.find((e) => e.CODFILIAL == this.state.Movimento.Filial);
+        if (filial) {
+            filial = filial.CODFILIAL + " - " + filial.FILIAL;
+        } else {
+            filial = this.state.Movimento.Filial;
+        }
+
         return (
             <div>
                 <div className="panel panel-primary" id="Lancamento">
                     <div
                         className="panel-heading"
                         onClick={(e) => {
-                            this.handleClickDetails(e);
+                            this.handleClickDetails(e, "Lancamento");
                         }}
                     >
-                        <div className={"details " + (this.state.detailsIsShown == true ? "detailsHide" : "detailsShow")}></div>
+                        <div className={"details " + (this.state.detailsIsShownLancamento == true ? "detailsHide" : "detailsShow")}></div>
                         <h4 className="panel-title" style={{ display: "inline-block", verticalAlign: "middle" }}>
                             Lançamento
                         </h4>
@@ -1312,27 +1590,40 @@ class ModalDetalhes extends React.Component {
                 </div>
 
                 <div className="panel panel-primary" id="Divergencia">
-                    <div className="panel-heading">
-                        <h3 className="panel-title">Divergência</h3>
+                    <div
+                        className="panel-heading"
+                        onClick={(e) => {
+                            this.handleClickDetails(e, "Divergencia");
+                        }}
+                    >
+                        <div className={"details " + (this.state.detailsIsShownDivergencia == true ? "detailsHide" : "detailsShow")}></div>
+                        <h4 className="panel-title" style={{ display: "inline-block", verticalAlign: "middle" }}>
+                            Divergência
+                        </h4>
                     </div>
                     <div className="panel-body">
                         <div>
-                            <h3>{this.props.Divergencia.Divergencia.CategoriaDivergencia}</h3>
+                            <h3>Divergência: {this.props.Divergencia.Divergencia.CategoriaDivergencia}</h3>
+                            <b>Data de Criação: </b> <span>{this.props.Divergencia.Criacao}</span>
                         </div>
                         <div className="row">{this.renderOptFieldsCategoria()}</div>
                         <br />
-                        <div>
-                            <b>Observação: </b>
-                            <p>{this.props.Divergencia.Divergencia.ObservacaoDivergencia}</p>
-                            {/* <textarea className="form-control" rows="4" value={this.props.Divergencia.Divergencia.ObservacaoDivergencia}/> */}
-                        </div>
-                        <br />
+                        {this.props.Divergencia.Divergencia.ObservacaoDivergencia != "" && (
+                            <div>
+                                <b>Observação: </b>
+                                <br />
+
+                                <p>{this.props.Divergencia.Divergencia.ObservacaoDivergencia}</p>
+                            </div>
+                        )}
                         <br />
                         <div>
                             <label htmlFor="" style={{ color: "red" }}>
                                 Cancelar Divergência:{" "}
                             </label>
-                            <textarea rows="4" className="form-control form-control-danger"></textarea>
+                            <br />
+
+                            {this.props.Divergencia.status != "Cancelado" ? <textarea rows="4" onChange={(e) => this.setState({ MotivoCancelamento: e.target.value })} value={this.state.MotivoCancelamento} className="form-control form-control-danger" /> : <span>{this.props.Divergencia.MotivoCancelamento}</span>}
                         </div>
                     </div>
                 </div>

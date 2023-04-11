@@ -1,0 +1,20 @@
+ID=>                        PK, NOT_NULL, INT                       =>Não pode ser o IDMOV porque pode haver mais de uma por Movimento
+IDMOV=>                     FK, NOT_NULL, INT                       =>Fazer a query do movimento na CastilhoRM, da pra fazer em Bases separadas, dai eu faço duas queries   
+CODCOLIGADA=>               FK, NOT_NULL, INT               
+CATEGORIA_DIVERGENCIA=>     NOT_NULL, VARCHAR? TABELA SEPARADA?     =>Vou precisar fazer queries por Categoria, se for usar VARCHAR deve ficar lento, então deve ser melhor outra tabela com as categorias
+OBSERVACOES_DIVERGENCIA=>   NULL, JSON? TABELA SEPARADA?            =>Estou usando um JSON tipo o abaixo, mas dependendo da categoria vai ter outros campos pra preencher, então acho mais fácil salvar o JSON como VARCHAR
+STATUS=>                    NOT_NULL, BOOLEAN                       =>Ativo ou Cancelado
+MOTIVO_CANCELAMENTO=>       NULL, VARCHAR
+
+CREATEDON=>                 NOT_NULL, DATE
+CREATEDBY=>                 NOT_NULL, VARCHAR
+MODIFIEDDON=>               NOT_NULL, DATE
+MODIFIEDDBY=>               NOT_NULL, VARCHAR
+
+
+
+{
+    ProdutoLançado: "Diversos",
+    ProdutoCorreto: "Pregos",
+    Observacao: "Favor Consultar a Contabilidade antes de usar o Produto Diversos"
+}
