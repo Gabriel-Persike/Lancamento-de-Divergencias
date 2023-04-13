@@ -30,16 +30,16 @@ textarea {
 .detailsShow {
     background: url("/DivergenciasdeLancamento/resources/images/details_open.png") no-repeat center;
     cursor: pointer;
-    width: 30px;
+    width: 20px;
 }
 .detailsHide {
     background: url("/DivergenciasdeLancamento/resources/images/details_close.png") no-repeat center;
     cursor: pointer;
-    width: 30px;
+    width: 20px;
 }
 
 .details {
-    height: 30px;
+    height: 20px;
     display: inline-block;
     vertical-align: middle;
 }

@@ -3,6 +3,7 @@ Produtos = [];
 Departamentos = [];
 Filiais = [];
 myModal = null;
+DataTableDivergencias = null;
 function makeid(length) {
 	var result = '';
 	var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -136,6 +137,9 @@ function BuscaColigadas() {
 }
 
 function AbreModalDetalhes(Divergencia, onCancelarDivergencia) {
+	console.log(Divergencia);
+
+
 	myModal = FLUIGC.modal({
 		title: 'Divergência',
 		content: '<div id="rootModalDetalhes"></div>',
@@ -296,9 +300,126 @@ function BuscaFiliais(CODCOLIGADA) {
 function getDateNow() {
 	var date = new Date();
 
-	var day = date.getDate().toString().padStart(2,"0");
-	var month =(date.getMonth() + 1).toString().padStart(2,"0"); 
+	var day = date.getDate().toString().padStart(2, "0");
+	var month = (date.getMonth() + 1).toString().padStart(2, "0");
 	var year = date.getFullYear();
 
 	return day + "/" + month + "/" + year;
+}
+
+function NotificaDivergencias(Divergencias) {
+	console.log(Divergencias)
+
+	var Notificacoes = [];
+	for (const Divergencia of Divergencias) {
+		var found = Notificacoes.find(e => e.Usuario == Divergencia.Usuario)
+
+		if (found) {
+			found.Divergencias.push( Divergencia )
+		}
+		else {
+			Notificacoes.push({
+				Usuario: Divergencia.Usuario,
+				Divergencias: [
+					Divergencia
+				]
+			})
+
+
+		}
+	}
+
+	console.log(Notificacoes)
+	var html = "";
+	for (const Notificacao of Notificacoes) {
+		html = "";
+		html+="<div>"
+
+		html += "<p>Segue abaixo, divergências referentes ao Relatório de Compromissos Cadastrados/Fundo Fixo.</p>";
+
+		html += "<p>Favor, atenção aos lançamento das notas fiscais no sistema, por gentileza utilizar o relatório de compromissos, como uma ferramenta de conferencia diária, assim, podendo identificar o erro antes que a nota esteja quitada, da declaração ter sido entregue, os relatórios gerenciais gerados para a diretoria e o fechamento contábil.</p>";
+		html += "<p>Favor observar as divergências e a correção para a realização dos próximos lançamentos.</p><br/><br/>";
+
+		html += "<div align='center'>"
+        html += '<table border="0" cellpadding="2" cellspacing="0" id="bodyTable" border="1">'
+		html += "<thead>"
+		html += "<tr>"
+		html += "<th>Emissão</th>"
+		html += "<th>Tipo de Movimento</th>"
+		html += "<th>Filial</th>"
+		html += "<th>Criação</th>"
+		html += "<th>Fornecedor</th>"
+		html += "<th>Usuario</th>"
+		html += "<th>Correção</th>"
+		html += "</tr>"
+		html += "</thead>"
+		html += "<tbody>"
+
+		for (const DivergenciaNotificacao of Notificacao.Divergencias) {
+			html += "<tr>"
+
+			html += "<td>" + DivergenciaNotificacao.Emissao + "</td>"
+			html += "<td>" + DivergenciaNotificacao.TipoMovimento + "</td>"
+			html += "<td>" + DivergenciaNotificacao.Filial + "</td>"
+			html += "<td>" + DivergenciaNotificacao.Criacao + "</td>"
+			html += "<td>" + DivergenciaNotificacao.CGCCFO + "<br/>" + DivergenciaNotificacao.Fornecedor + "</td>"
+			html += "<td>" + DivergenciaNotificacao.Usuario + "</td>"
+			html += "<td>" + DivergenciaNotificacao.Divergencia.CategoriaDivergencia + "</td>"
+
+			html += "</tr>"
+		}
+
+
+		html += "</tbody>"
+		html += "</table>"
+		html += "</div>"
+		html += "<br/><br/>"
+
+		html += "<p>Qualquer dúvida entrar em contato com a Contabilidade.</p>"
+		html+="</div>"
+
+
+
+	}
+
+	EnviaEmail(html);
+
+}
+
+function EnviaEmail(CorpoEmail) {
+	//var url = 'http://fluig.castilho.com.br:1010';//Prod
+	var url = 'http://homologacao.castilho.com.br:2020';//Homolog
+
+
+	var data = {
+		//"to": "",
+		"to": "gabriel.persike@castilho.com.br",
+		//from: "fluig@construtoracastilho.com.br", //Prod
+		from: "no-reply@construtoracastilho.com.br", //Homolog
+		"subject": "Divergências Contabilidade", //   subject
+		"templateId": "TPL_PADRAO_CASTILHO", // Email template Id previously registered
+		"dialectId": "pt_BR", //Email dialect , if not informed receives pt_BR , email dialect ("pt_BR", "en_US", "es")
+		"param": {
+			"CORPO_EMAIL": CorpoEmail,
+			"SERVER_URL": url,
+			"TENANT_ID": "1"
+		} //  Map with variables to be replaced in the template
+	};
+
+	$.ajax({
+		url: "/api/public/alert/customEmailSender",
+		type: "POST",
+		contentType: "application/json",
+		data: JSON.stringify(data)
+	})
+		.done(function (data) {
+		
+		})
+		.fail(function (jqXHR, textStatus, errorThrown) {
+			FLUIGC.toast({
+				message: 'Erro ao enviar o e-mail.',
+				type: 'danger'
+			});
+			//Falha
+		});
 }

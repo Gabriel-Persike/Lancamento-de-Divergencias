@@ -14,6 +14,10 @@
     <!--Fluig-->
     <script src="/webdesk/vcXMLRPC.js"></script>
 
+    <!--DataTables-->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css" />
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
+
     <!--Processo-->
     <script src="/DivergenciasdeLancamento/resources/js/ReactComponentes.jsx" type="text/babel"></script>
 </div>

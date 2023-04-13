@@ -16,9 +16,7 @@ class InformacoesIniciais extends React.Component {
             {
                 Divergencias: Divergencias
             },
-            () => {
-                console.log(JSON.stringify(this.state.Divergencias));
-            }
+            () => {}
         );
     }
 
@@ -36,10 +34,19 @@ class InformacoesIniciais extends React.Component {
             found.MotivoCancelamento = Motivo;
             DivergenciasCanceladas.push(found);
 
-            this.setState({
-                Divergencias: Divergencias,
-                DivergenciasCanceladas: DivergenciasCanceladas
-            });
+            this.setState(
+                {
+                    Divergencias: Divergencias,
+                    DivergenciasCanceladas: DivergenciasCanceladas
+                },
+                () => {
+                    FLUIGC.toast({
+                        title: "Divergência Cancelada!",
+                        message: "",
+                        type: "warning"
+                    });
+                }
+            );
         }
     }
 
@@ -64,14 +71,27 @@ class InformacoesIniciais extends React.Component {
                             <Lancamento onLancamentoDivergencia={(e) => this.handleLancamentoDivergencia(e)} />
                         </div>
                         <div className="tab-pane" id="tabItens">
-                            <button
-                                className="btn btn-primary"
-                                onClick={() => {
-                                    this.setState({ MostraDivergenciasAtivas: !this.state.MostraDivergenciasAtivas });
-                                }}
-                            >
-                                ChangeView
-                            </button>
+                            <Panel title="Filtro">
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => {
+                                        this.setState({ MostraDivergenciasAtivas: !this.state.MostraDivergenciasAtivas });
+                                    }}
+                                >
+                                    ChangeView
+                                </button>
+
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => {
+                                        NotificaDivergencias(this.state.Divergencias)
+                                    }}
+                                >
+                                    Notificar Divergências
+                                </button>
+
+                            </Panel>
+
                             <ListaDivergencias Divergencias={this.state.MostraDivergenciasAtivas == true ? this.state.Divergencias : this.state.DivergenciasCanceladas} onCancelarDivergencia={(ID, Motivo) => this.handleCancelarDivergencia(ID, Motivo)} />
                         </div>
                     </div>
@@ -119,13 +139,98 @@ class LinhaDivergencia extends React.Component {
 class ListaDivergencias extends React.Component {
     renderDivergencias() {
         var Divergencias = this.props.Divergencias;
-        return Divergencias.map((divergencia) => {
-            return <LinhaDivergencia key={divergencia.ID} Divergencia={divergencia} onCancelarDivergencia={(ID, Motivo) => this.props.onCancelarDivergencia(ID, Motivo)} />;
-        });
+        console.log(Divergencias);
     }
 
     componentDidUpdate() {
-        FLUIGC.popover(".bs-docs-popover-hover", { trigger: "hover", placement: "auto" });
+        DataTableDivergencias.clear();
+        DataTableDivergencias.rows.add(this.props.Divergencias); // Add new data
+        setTimeout(() => {
+            DataTableDivergencias.columns.adjust().draw();
+        }, 200);
+
+        DataTableDivergencias.on("draw", { onCancelarDivergencia: this.props.onCancelarDivergencia }, (event) => {
+            FLUIGC.popover(".bs-docs-popover-hover", { trigger: "hover", placement: "auto" });
+
+            $(".btnShowDetails").off("click");
+            $(".btnShowDetails").on("click", { onCancelarDivergencia: event.data.onCancelarDivergencia }, function (event) {
+                var tr = $(this).closest("tr");
+                var row = DataTableDivergencias.row(tr);
+                var values = row.data();
+                AbreModalDetalhes(values, event.data.onCancelarDivergencia);
+            });
+        });
+    }
+
+    componentDidMount() {
+        DataTableDivergencias = $("#TableDivergencias").DataTable({
+            pageLength: 25,
+            columns: [
+                { data: "Emissao" },
+                { data: "TipoMovimento" },
+                { data: "Filial" },
+                { data: "Criacao" },
+                {
+                    render: function (data, type, row) {
+                        return "<span>" + row.CGCCFO + " <br /> " + row.Fornecedor + "</span>";
+                    }
+                },
+                { data: "Usuario" },
+                {
+                    data: "Divergencia",
+                    render: function (data, type, row) {
+                        return data.CategoriaDivergencia;
+                    }
+                },
+                {
+                    render: function (data, type, row) {
+                        if (row.status == "Cancelado") {
+                            return "<div style='text-align:center'><button class='btn btn-danger btnShowDetails bs-docs-popover-hover' data-toggle='popover' data-content='" + row.MotivoCancelamento + "' >Detalhes</button></div>";
+                        } else {
+                            return "<div style='text-align:center'><button class='btn btn-primary btnShowDetails'>Detalhes</button></div>";
+                        }
+                    }
+                }
+            ],
+            language: {
+                sEmptyTable: "Nenhum registro encontrado",
+                sInfo: "Mostrando de _START_ até _END_ de _TOTAL_ registros",
+                sInfoEmpty: "Mostrando 0 até 0 de 0 registros",
+                sInfoFiltered: "(Filtrados de _MAX_ registros)",
+                sInfoPostFix: "",
+                sInfoThousands: ".",
+                sLengthMenu: "_MENU_ resultados por página",
+                sLoadingRecords: "Carregando...",
+                sProcessing: "Processando...",
+                sZeroRecords: "Nenhum registro encontrado",
+                sSearch: "Pesquisar",
+                oPaginate: {
+                    sNext: "Próximo",
+                    sPrevious: "Anterior",
+                    sFirst: "Primeiro",
+                    sLast: "Último"
+                },
+                oAria: {
+                    sSortAscending: ": Ordenar colunas de forma ascendente",
+                    sSortDescending: ": Ordenar colunas de forma descendente"
+                },
+                select: {
+                    rows: {
+                        _: "Selecionado %d linhas",
+                        0: "Nenhuma linha selecionada",
+                        1: "Selecionado 1 linha"
+                    }
+                },
+                buttons: {
+                    copy: "Copiar para a área de transferência",
+                    copyTitle: "Cópia bem sucedida",
+                    copySuccess: {
+                        1: "Uma linha copiada com sucesso",
+                        _: "%d linhas copiadas com sucesso"
+                    }
+                }
+            }
+        });
     }
 
     render() {
@@ -135,12 +240,12 @@ class ListaDivergencias extends React.Component {
                     <h3 className="panel-title">Divergências/Correções</h3>
                 </div>
                 <div className="panel-body">
-                    <table className="table table-bordered table-striped table-condensed">
+                    <table className="table table-bordered table-striped" id="TableDivergencias" style={{ width: "100%" }}>
                         <thead>
                             <tr>
                                 <th>Emissão</th>
                                 {/* <th>Identificador</th> */}
-                                <th>TP Mov</th>
+                                <th>T.M.</th>
                                 <th>Filial</th>
                                 <th>Criação</th>
                                 <th>Fornecedor</th>
@@ -149,7 +254,7 @@ class ListaDivergencias extends React.Component {
                                 <th></th>
                             </tr>
                         </thead>
-                        <tbody>{this.renderDivergencias()}</tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -218,9 +323,6 @@ class Lancamento extends React.Component {
 
     validaLancamentoDivergencia() {
         if (!this.state.Movimento.Coligada || !this.state.Movimento.IDMOV) {
-            console.log(this.state.Movimento.Coligada);
-            console.log(this.state.Movimento.IDMOV);
-
             FLUIGC.toast({
                 title: "Nenhum Movimento Selecionado!",
                 message: "",
@@ -302,7 +404,6 @@ class Lancamento extends React.Component {
                     ObservacaoDivergencia: this.state.ObservacaoDivergencia
                 }
             };
-            console.log(Divergencia);
             this.props.onLancamentoDivergencia(Divergencia);
 
             this.setState({
@@ -329,8 +430,6 @@ class Lancamento extends React.Component {
     }
 
     handleBuscaMovimento(movimento, itens) {
-        console.log(movimento);
-        console.log(itens);
         this.setState({
             Movimento: movimento,
             Itens: itens
@@ -1063,7 +1162,7 @@ class ErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             // You can render any custom fallback UI
-            return <h1>Something went wrong.</h1>;
+            return <h1>Um erro ocorreu! Tente atualizar a página, e caso o erro percista entre em contato com o Administrador do Sistema.</h1>;
         }
 
         return this.props.children;
@@ -1283,8 +1382,6 @@ class ModalDetalhes extends React.Component {
         this.state = {
             Movimento: "",
             Itens: "",
-            detailsIsShownLancamento: true,
-            detailsIsShownDivergencia: true,
             MotivoCancelamento: ""
         };
         this.BuscaMovimento(this.props.Divergencia.Coligada, this.props.Divergencia.Identificador);
@@ -1297,8 +1394,6 @@ class ModalDetalhes extends React.Component {
         Promise.all([BuscaMovimentoRM(CODCOLIGADA, IDMOV), BuscaItensMovimentoRM(CODCOLIGADA, IDMOV)])
             .then((retorno) => {
                 var movimentoRM = retorno[0];
-                console.log(movimentoRM);
-
                 var DATASAIDA = movimentoRM.DATASAIDA;
                 DATASAIDA = DATASAIDA.split(" ")[0].split("-").reverse().join("/");
                 var DATAEMISSAO = movimentoRM.DATAEMISSAO;
@@ -1337,11 +1432,7 @@ class ModalDetalhes extends React.Component {
                         Movimento: movimento,
                         Itens: itens
                     },
-                    () => {
-                        console.log(this.state.Movimento);
-                        console.log(this.state.Itens);
-                        console.log(this.props.Divergencia);
-                    }
+                    () => {}
                 );
                 //this.props.onBuscaMovimento(movimento, itens);
             })
@@ -1390,10 +1481,6 @@ class ModalDetalhes extends React.Component {
     }
 
     CancelaDivergencia() {
-        console.log("Cancelar Divergencia!");
-        console.log(this.state.Movimento);
-        console.log(this.state.Itens);
-
         this.props.onCancelarDivergencia(this.state.Movimento.ID, this.state.MotivoCancelamento);
     }
 
@@ -1461,26 +1548,6 @@ class ModalDetalhes extends React.Component {
         return list;
     }
 
-    handleClickDetails(e, panel) {
-        var detailsIsShown = panel == "Lancamento" ? this.state.detailsIsShownLancamento : this.state.detailsIsShownDivergencia;
-
-        if (detailsIsShown) {
-            $(e.target).closest(".panel").find(".panel-body:first").slideUp();
-        } else {
-            $(e.target).closest(".panel").find(".panel-body:first").slideDown();
-        }
-
-        if (panel == "Lancamento") {
-            this.setState({
-                detailsIsShownLancamento: !this.state.detailsIsShownLancamento
-            });
-        } else {
-            this.setState({
-                detailsIsShownDivergencia: !this.state.detailsIsShownDivergencia
-            });
-        }
-    }
-
     render() {
         var coligada = Coligadas.find((e) => {
             return e.CODCOLIGADA == this.props.Divergencia.Coligada;
@@ -1501,132 +1568,146 @@ class ModalDetalhes extends React.Component {
 
         return (
             <div>
-                <div className="panel panel-primary" id="Lancamento">
-                    <div
-                        className="panel-heading"
-                        onClick={(e) => {
-                            this.handleClickDetails(e, "Lancamento");
-                        }}
-                    >
-                        <div className={"details " + (this.state.detailsIsShownLancamento == true ? "detailsHide" : "detailsShow")}></div>
-                        <h4 className="panel-title" style={{ display: "inline-block", verticalAlign: "middle" }}>
-                            Lançamento
-                        </h4>
-                    </div>
-                    <div className="panel-body">
-                        <div className="row">
-                            <div className="col-md-3">
-                                <div>
-                                    <b>Coligada: </b>
-                                    <span>{coligada.CODCOLIGADA + " - " + coligada.NOME}</span>
-                                </div>
-                                <br />
-                            </div>
-                            <div className="col-md-3">
-                                <div>
-                                    <b>Filial: </b>
-                                    <span>{this.state.Movimento.Filial}</span>
-                                </div>
-                                <br />
-                            </div>
-                            <div className="col-md-6">
-                                <div>
-                                    <b>Fornecedor: </b>
-                                    <span>{this.state.Movimento.CGCCFO + " - " + this.state.Movimento.Fornecedor}</span>
-                                </div>
-                                <br />
-                            </div>
-                        </div>
-                        <div className="row">
-                            <div className="col-md-3">
-                                <div>
-                                    <b>Tipo de Movimento: </b>
-                                    <span>{this.state.Movimento.CODTMV}</span>
-                                </div>
-                                <br />
-                            </div>
-                            <div className="col-md-3">
-                                <div>
-                                    <b>Valor Total: </b>
-                                    <MoneySpan text={this.state.Movimento.ValorTotal != "" ? "R$" + parseFloat(this.state.Movimento.ValorTotal).toFixed(2) : ""} />
-                                </div>
-                                <br />
-                            </div>
-                            <div className="col-md-3">
-                                <div>
-                                    <b>Data de Emissão: </b>
-                                    <span>{this.state.Movimento.DataEmissao}</span>
-                                </div>
-                                <br />
-                            </div>
-                            <div className="col-md-3">
-                                <div>
-                                    <b>Usuário: </b>
-                                    <span>{this.state.Movimento.Usuario}</span>
-                                </div>
-                                <br />
-                            </div>
-                        </div>
-                        <div className="row" id="ItensMovimento">
-                            <br />
-                            <div className="col-md-12">
-                                {this.state.Itens.length > 0 && (
-                                    <table className="table table-bordered table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>Item</th>
-                                                <th>Produto</th>
-                                                <th>Qntd.</th>
-                                                <th>Valor Unit.</th>
-                                                <th>Valor Total</th>
-                                            </tr>
-                                        </thead>
-                                        {this.renderItens()}
-                                    </table>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="panel panel-primary" id="Divergencia">
-                    <div
-                        className="panel-heading"
-                        onClick={(e) => {
-                            this.handleClickDetails(e, "Divergencia");
-                        }}
-                    >
-                        <div className={"details " + (this.state.detailsIsShownDivergencia == true ? "detailsHide" : "detailsShow")}></div>
-                        <h4 className="panel-title" style={{ display: "inline-block", verticalAlign: "middle" }}>
-                            Divergência
-                        </h4>
-                    </div>
-                    <div className="panel-body">
-                        <div>
-                            <h3>Divergência: {this.props.Divergencia.Divergencia.CategoriaDivergencia}</h3>
-                            <b>Data de Criação: </b> <span>{this.props.Divergencia.Criacao}</span>
-                        </div>
-                        <div className="row">{this.renderOptFieldsCategoria()}</div>
-                        <br />
-                        {this.props.Divergencia.Divergencia.ObservacaoDivergencia != "" && (
+                <Panel title="Lançamento">
+                    <div className="row">
+                        <div className="col-md-3">
                             <div>
-                                <b>Observação: </b>
-                                <br />
-
-                                <p>{this.props.Divergencia.Divergencia.ObservacaoDivergencia}</p>
+                                <b>Coligada: </b>
+                                <span>{coligada.CODCOLIGADA + " - " + coligada.NOME}</span>
                             </div>
-                        )}
-                        <br />
-                        <div>
-                            <label htmlFor="" style={{ color: "red" }}>
-                                Cancelar Divergência:{" "}
-                            </label>
                             <br />
-
-                            {this.props.Divergencia.status != "Cancelado" ? <textarea rows="4" onChange={(e) => this.setState({ MotivoCancelamento: e.target.value })} value={this.state.MotivoCancelamento} className="form-control form-control-danger" /> : <span>{this.props.Divergencia.MotivoCancelamento}</span>}
+                        </div>
+                        <div className="col-md-3">
+                            <div>
+                                <b>Filial: </b>
+                                <span>{this.state.Movimento.Filial}</span>
+                            </div>
+                            <br />
+                        </div>
+                        <div className="col-md-6">
+                            <div>
+                                <b>Fornecedor: </b>
+                                <span>{this.state.Movimento.CGCCFO + " - " + this.state.Movimento.Fornecedor}</span>
+                            </div>
+                            <br />
                         </div>
                     </div>
+                    <div className="row">
+                        <div className="col-md-3">
+                            <div>
+                                <b>Tipo de Movimento: </b>
+                                <span>{this.state.Movimento.CODTMV}</span>
+                            </div>
+                            <br />
+                        </div>
+                        <div className="col-md-3">
+                            <div>
+                                <b>Valor Total: </b>
+                                <MoneySpan text={this.state.Movimento.ValorTotal != "" ? "R$" + parseFloat(this.state.Movimento.ValorTotal).toFixed(2) : ""} />
+                            </div>
+                            <br />
+                        </div>
+                        <div className="col-md-3">
+                            <div>
+                                <b>Data de Emissão: </b>
+                                <span>{this.state.Movimento.DataEmissao}</span>
+                            </div>
+                            <br />
+                        </div>
+                        <div className="col-md-3">
+                            <div>
+                                <b>Usuário: </b>
+                                <span>{this.state.Movimento.Usuario}</span>
+                            </div>
+                            <br />
+                        </div>
+                    </div>
+                    <div className="row" id="ItensMovimento">
+                        <br />
+                        <div className="col-md-12">
+                            {this.state.Itens.length > 0 && (
+                                <table className="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th>Produto</th>
+                                            <th>Qntd.</th>
+                                            <th>Valor Unit.</th>
+                                            <th>Valor Total</th>
+                                        </tr>
+                                    </thead>
+                                    {this.renderItens()}
+                                </table>
+                            )}
+                        </div>
+                    </div>
+                </Panel>
+
+                <Panel title="Divergência">
+                    <div>
+                        <h3>Divergência: {this.props.Divergencia.Divergencia.CategoriaDivergencia}</h3>
+                        <b>Data de Criação: </b> <span>{this.props.Divergencia.Criacao}</span>
+                    </div>
+                    <div className="row">{this.renderOptFieldsCategoria()}</div>
+                    <br />
+                    {this.props.Divergencia.Divergencia.ObservacaoDivergencia != "" && (
+                        <div>
+                            <b>Observação: </b>
+                            <br />
+
+                            <p>{this.props.Divergencia.Divergencia.ObservacaoDivergencia}</p>
+                        </div>
+                    )}
+                    <br />
+                    <div>
+                        <label htmlFor="" style={{ color: "red" }}>
+                            Cancelar Divergência:{" "}
+                        </label>
+                        <br />
+
+                        {this.props.Divergencia.status != "Cancelado" ? <textarea rows="4" onChange={(e) => this.setState({ MotivoCancelamento: e.target.value })} value={this.state.MotivoCancelamento} className="form-control form-control-danger" /> : <span>{this.props.Divergencia.MotivoCancelamento}</span>}
+                    </div>
+                </Panel>
+            </div>
+        );
+    }
+}
+
+class Panel extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            detailsIsShown: true
+        };
+    }
+
+    handleClickDetails(e) {
+        if (this.state.detailsIsShown) {
+            $(e.target).closest(".panel").find(".panel-body:first").slideUp();
+        } else {
+            $(e.target).closest(".panel").find(".panel-body:first").slideDown();
+        }
+        this.setState({
+            detailsIsShown: !this.state.detailsIsShown
+        });
+    }
+
+    render() {
+        return (
+            <div className="panel panel-primary">
+                <div
+                    className="panel-heading"
+                    onClick={(e) => {
+                        this.handleClickDetails(e);
+                    }}
+                >
+                    <div className={"details " + (this.state.detailsIsShown == true ? "detailsHide" : "detailsShow")}></div>
+                    <h4 className="panel-title" style={{ display: "inline-block", verticalAlign: "middle" }}>
+                        {this.props.title}
+                    </h4>
                 </div>
+                <div className="panel-body">{this.props.children}</div>
             </div>
         );
     }
