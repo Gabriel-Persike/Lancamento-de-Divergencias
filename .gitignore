@@ -3,3 +3,6 @@
 /.ModeloDBDivergencias.txt
 /react-dom.development.js
 /react.development.js
+/node_modules
+/package.json
+/package-lock.json

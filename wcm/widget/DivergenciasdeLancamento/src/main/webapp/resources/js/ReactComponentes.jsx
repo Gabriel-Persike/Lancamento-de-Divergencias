@@ -1,34 +1,49 @@
-class InformacoesIniciais extends React.Component {
+const useEffect = React.useEffect;
+const useState = React.useState;
+
+class AppRoot extends React.Component {
     constructor(props) {
         super(props);
 
         this.state = {
             Divergencias: [],
             DivergenciasCanceladas: [],
-            MostraDivergenciasAtivas: true
+            MostraDivergenciasAtivas: true,
+            FiltroObra: "",
+            FiltroUsuario: "",
+            FiltroTipoDeMovimento: "Todos",
+            FiltroPeriodoInicio: "",
+            FiltroPeriodoFim: "",
+            FiltroStatus: "Ativo"
         };
     }
 
-    handleLancamentoDivergencia(divergencia) {
-        var Divergencias = this.state.Divergencias.slice();
-        Divergencias.push(divergencia);
-        this.setState(
-            {
-                Divergencias: Divergencias
-            },
-            () => {}
-        );
+    async handleBuscaDivergencias(){
+        var Divergencias = await BuscaDivergencias();
+        this.setState({
+            Divergencias: Divergencias
+        },()=>{
+
+            FLUIGC.toast({
+                title:"Diverngias encontradas",
+                message:"",
+                type:"success",
+            })
+            console.log(this.state.Divergencias)
+        });
     }
 
     handleCancelarDivergencia(id, Motivo) {
-        console.log("handleCancelarDivergencia: " + id);
-
         var Divergencias = this.state.Divergencias.slice();
-
         var found = Divergencias.find((obj) => obj.ID == id);
 
+        //Se foi foi encontrado uma divergencia com o mesmo ID passado no parametro
         if (found) {
+            //Deixa na lista somente os Objetos que tenham IDs diferente do ID passado para cancelar
+            //Basicamente Remove a Divergencia Cancelada, mas a logica usada é diferente por causa do Array.filter()
             Divergencias = Divergencias.filter((obj) => obj.ID != id);
+
+            //Joga a Divergencia Cancelada na Lista de Divergencias Canceladas
             var DivergenciasCanceladas = this.state.DivergenciasCanceladas.slice();
             found.status = "Cancelado";
             found.MotivoCancelamento = Motivo;
@@ -50,49 +65,78 @@ class InformacoesIniciais extends React.Component {
         }
     }
 
+    handleChangeFiltro(target, value) {
+        this.setState({
+            [target]: value
+        });
+    }
+
     render() {
         return (
             <ErrorBoundary>
                 <div id="divCollapse">
                     <ul id="coltabs" className="nav nav-tabs nav-justified nav-pills" role="tablist" style={{ paddingBottom: "0px", width: "100%" }}>
                         <li className="collapse-tab active">
-                            <a href="#tabInformacoesIniciais" role="tab" id="atabInformacoesIniciais" data-toggle="tab" aria-expanded="true" className="tab">
+                            <a href="#tabLancarDivergencias" role="tab" id="atabLancarDivergencias" data-toggle="tab" aria-expanded="true" className="tab">
                                 Lançar Divergência
                             </a>
                         </li>
                         <li className="collapse-tab">
-                            <a href="#tabItens" role="tab" id="atabItens" data-toggle="tab" aria-expanded="true" className="tab">
+                            <a href="#tabListaDivergencias" role="tab" id="atabListaDivergencias" data-toggle="tab" aria-expanded="true" className="tab">
                                 Lista de Divergências
+                            </a>
+                        </li>
+                        <li className="collapse-tab">
+                            <a href="#tabDashboards" role="tab" id="atabDashboards" data-toggle="tab" aria-expanded="true" className="tab">
+                                Dashboards
                             </a>
                         </li>
                     </ul>
                     <div className="tab-content">
-                        <div className="tab-pane active" id="tabInformacoesIniciais">
-                            <Lancamento onLancamentoDivergencia={(e) => this.handleLancamentoDivergencia(e)} />
+                        <div className="tab-pane active" id="tabLancarDivergencias">
+                            <Lancamento />
                         </div>
-                        <div className="tab-pane" id="tabItens">
+                        <div className="tab-pane" id="tabListaDivergencias">
                             <Panel title="Filtro">
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={() => {
-                                        this.setState({ MostraDivergenciasAtivas: !this.state.MostraDivergenciasAtivas });
-                                    }}
-                                >
-                                    ChangeView
-                                </button>
+                                <FiltroListaDivergencias FiltroObra={this.props.FiltroObra} FiltroUsuario={this.props.FiltroUsuario} FiltroTipoDeMovimento={this.props.FiltroTipoDeMovimento} FiltroPeriodoInici={this.props.FiltroPeriodoInici} FiltroPeriodoFim={this.props.FiltroPeriodoFim} FiltroStatus={this.props.FiltroStatus} onChangeFiltro={(target, value) => this.handleChangeFiltro(target, value)} />
 
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={() => {
-                                        NotificaDivergencias(this.state.Divergencias)
-                                    }}
-                                >
-                                    Notificar Divergências
-                                </button>
+                                <div>
+                                    Placeholder
+                                    <br />
+                                    <br />
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={() => {
+                                            this.setState({ MostraDivergenciasAtivas: !this.state.MostraDivergenciasAtivas });
+                                        }}
+                                        style={{ marginRight: "20px" }}
+                                    >
+                                        ChangeView
+                                    </button>
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={() => {
+                                            NotificaDivergencias(this.state.Divergencias);
+                                        }}
+                                    >
+                                        Notificar Divergências
+                                    </button>
+                                    <button
+                                        className="btn btn-success"
+                                        onClick={() => {
+                                            this.handleBuscaDivergencias();
+                                        }}
+                                    >
+                                        Buscar
+                                    </button>
 
+                                </div>
                             </Panel>
 
                             <ListaDivergencias Divergencias={this.state.MostraDivergenciasAtivas == true ? this.state.Divergencias : this.state.DivergenciasCanceladas} onCancelarDivergencia={(ID, Motivo) => this.handleCancelarDivergencia(ID, Motivo)} />
+                        </div>
+                        <div className="tab-pane" id="tabDashboards">
+                            {/* <DashboardDivergencias /> */}
                         </div>
                     </div>
                 </div>
@@ -101,91 +145,32 @@ class InformacoesIniciais extends React.Component {
     }
 }
 
-class LinhaDivergencia extends React.Component {
-    render() {
-        console.log(this.props.Divergencia);
-
-        var divergencia = this.props.Divergencia.Divergencia;
-        divergencia = <b>{divergencia.CategoriaDivergencia}</b>;
-
-        return (
-            <tr>
-                <td>{this.props.Divergencia.Emissao}</td>
-                {/* <td>{this.props.Divergencia.Identificador}</td> */}
-                <td>{this.props.Divergencia.TipoMovimento}</td>
-                <td>{this.props.Divergencia.Filial}</td>
-                <td>{this.props.Divergencia.Criacao}</td>
-                <td>
-                    {this.props.Divergencia.CGCCFO} <br /> {this.props.Divergencia.Fornecedor}
-                </td>
-                <td>{this.props.Divergencia.Usuario}</td>
-                <td>{divergencia}</td>
-                <td style={{ textAlign: "center" }}>
-                    {this.props.Divergencia.status == "Cancelado" ? (
-                        <button className={"btn btn-danger bs-docs-popover-hover"} onClick={() => AbreModalDetalhes(this.props.Divergencia, this.props.onCancelarDivergencia)} data-toggle={"popover"} data-content={this.props.Divergencia.MotivoCancelamento}>
-                            Detalhes
-                        </button>
-                    ) : (
-                        <button className={"btn btn-primary"} onClick={() => AbreModalDetalhes(this.props.Divergencia, this.props.onCancelarDivergencia)}>
-                            Detalhes
-                        </button>
-                    )}
-                </td>
-            </tr>
-        );
-    }
-}
-
-class ListaDivergencias extends React.Component {
-    renderDivergencias() {
-        var Divergencias = this.props.Divergencias;
-        console.log(Divergencias);
-    }
-
-    componentDidUpdate() {
-        DataTableDivergencias.clear();
-        DataTableDivergencias.rows.add(this.props.Divergencias); // Add new data
-        setTimeout(() => {
-            DataTableDivergencias.columns.adjust().draw();
-        }, 200);
-
-        DataTableDivergencias.on("draw", { onCancelarDivergencia: this.props.onCancelarDivergencia }, (event) => {
-            FLUIGC.popover(".bs-docs-popover-hover", { trigger: "hover", placement: "auto" });
-
-            $(".btnShowDetails").off("click");
-            $(".btnShowDetails").on("click", { onCancelarDivergencia: event.data.onCancelarDivergencia }, function (event) {
-                var tr = $(this).closest("tr");
-                var row = DataTableDivergencias.row(tr);
-                var values = row.data();
-                AbreModalDetalhes(values, event.data.onCancelarDivergencia);
-            });
-        });
-    }
-
-    componentDidMount() {
+function ListaDivergencias({Divergencias, onCancelarDivergencia}) {
+    useEffect(() => {
+        //Ao Criar o componente Inicia a DataTables
         DataTableDivergencias = $("#TableDivergencias").DataTable({
             pageLength: 25,
             columns: [
-                { data: "Emissao" },
-                { data: "TipoMovimento" },
-                { data: "Filial" },
-                { data: "Criacao" },
+                { data: "DATAEMISSAO" },
+                { data: "CODTMV" },
+                { data: "CODFILIAL" },
+                { data: "CREATEDON" },
                 {
                     render: function (data, type, row) {
-                        return "<span>" + row.CGCCFO + " <br /> " + row.Fornecedor + "</span>";
+                        return "<span>" + row.CGCCFO + " <br /> " + row.FORNECEDOR + "</span>";
                     }
                 },
-                { data: "Usuario" },
+                { data: "CODUSUARIO" },
                 {
-                    data: "Divergencia",
+                    data: "CATEGORIA",
                     render: function (data, type, row) {
-                        return data.CategoriaDivergencia;
+                        return data;
                     }
                 },
                 {
                     render: function (data, type, row) {
-                        if (row.status == "Cancelado") {
-                            return "<div style='text-align:center'><button class='btn btn-danger btnShowDetails bs-docs-popover-hover' data-toggle='popover' data-content='" + row.MotivoCancelamento + "' >Detalhes</button></div>";
+                        if (row.STATUS == false) {
+                            return "<div style='text-align:center'><button class='btn btn-danger btnShowDetails bs-docs-popover-hover' data-toggle='popover' data-content='" + row.MOTIVO_CANC + "' >Detalhes</button></div>";
                         } else {
                             return "<div style='text-align:center'><button class='btn btn-primary btnShowDetails'>Detalhes</button></div>";
                         }
@@ -231,56 +216,54 @@ class ListaDivergencias extends React.Component {
                 }
             }
         });
-    }
+    }, []);
 
-    render() {
-        return (
-            <div className="panel panel-primary">
-                <div className="panel-heading">
-                    <h3 className="panel-title">Divergências/Correções</h3>
-                </div>
-                <div className="panel-body">
-                    <table className="table table-bordered table-striped" id="TableDivergencias" style={{ width: "100%" }}>
-                        <thead>
-                            <tr>
-                                <th>Emissão</th>
-                                {/* <th>Identificador</th> */}
-                                <th>T.M.</th>
-                                <th>Filial</th>
-                                <th>Criação</th>
-                                <th>Fornecedor</th>
-                                <th>Usuário</th>
-                                <th>Correção</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        );
-    }
-}
+    useEffect(() => {
+        //Toda vez que o componente foi atualizado passa as Divergencias para a DataTables
+        DataTableDivergencias.clear();
+        DataTableDivergencias.rows.add(Divergencias);
+        setTimeout(() => {
+            DataTableDivergencias.columns.adjust().draw();
+        }, 200);
 
-function Item({ ItemIndex, CodigoProduto, Produto, Quantidade, ValorUnit, CODUND }) {
+        //Toda vez que o componente for atualizado Cria a trigger on("draw") na DataTables
+        DataTableDivergencias.on("draw", { onCancelarDivergencia: onCancelarDivergencia }, (event) => {
+            //Importante notar que e passado o parametro onCancelarDivergencia no event
+            //Esse parametro vai ser repassado para a funcao AbreModalDetalhes()
+            //Por sua vez a funcao AbreModalDetalhes() repassar o onCancelarDivergencia para a Modal que será criada
+            //Assim a Modal criada conseguira chamar o onCancelarDivergencia caso o usuario clique no Botao Cancelar
+
+            FLUIGC.popover(".bs-docs-popover-hover", { trigger: "hover", placement: "auto" });
+            $(".btnShowDetails").off("click");
+            $(".btnShowDetails").on("click", { onCancelarDivergencia: event.data.onCancelarDivergencia }, function (event) {
+                //Cria a trigger no botão Detalhes que ao ser clicado abre a Modal Detalhes
+                var tr = $(this).closest("tr");
+                var row = DataTableDivergencias.row(tr);
+                var values = row.data();
+                //Passa as informacoes da Divergencia e o handler de cancelar divergencia para a funcao que inicia a Modal Detalhes
+                AbreModalDetalhes(values, event.data.onCancelarDivergencia);
+            });
+        });
+    }, [Divergencias]);
+
     return (
-        <tr>
-            <td>
-                <span>{ItemIndex + 1}</span>
-            </td>
-            <td>
-                <span>{CodigoProduto + " - " + Produto}</span>
-            </td>
-            <td>
-                <MoneySpan text={Quantidade + CODUND} />
-            </td>
-            <td>
-                <MoneySpan text={"R$ " + ValorUnit} />
-            </td>
-            <td>
-                <MoneySpan text={"R$ " + (Quantidade * ValorUnit).toFixed(2).toString()} />
-            </td>
-        </tr>
+        <Panel title="Divergências/Correções">
+            <table className="table table-bordered table-striped" id="TableDivergencias" style={{ width: "100%" }}>
+                <thead>
+                    <tr>
+                        <th>Emissão</th>
+                        <th>T.M.</th>
+                        <th>Filial</th>
+                        <th>Criação</th>
+                        <th>Fornecedor</th>
+                        <th>Usuário</th>
+                        <th>Correção</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </Panel>
     );
 }
 
@@ -290,6 +273,7 @@ class Lancamento extends React.Component {
 
         this.state = {
             CategoriaDivergencia: "",
+            CamposCategoriaDivergencia: "",
             ObservacaoDivergencia: "",
             Movimento: {
                 Coligada: "",
@@ -309,19 +293,8 @@ class Lancamento extends React.Component {
         };
     }
 
-    handleChangeCategoriaDivergencia(e) {
-        this.setState({
-            CategoriaDivergencia: e
-        });
-    }
-
-    handleChangeParametrosDivergencia(parametro, valor) {
-        this.setState({
-            [parametro]: valor
-        });
-    }
-
     validaLancamentoDivergencia() {
+        //Verifica se todos os campos foram preenchidos antes de lancar a divergencia
         if (!this.state.Movimento.Coligada || !this.state.Movimento.IDMOV) {
             FLUIGC.toast({
                 title: "Nenhum Movimento Selecionado!",
@@ -337,520 +310,54 @@ class Lancamento extends React.Component {
             });
             return false;
         } else {
-            var optionFound = this.buscaInfosCategoriaDivergenciaSelecionada();
-
-            if (optionFound) {
-                for (const field of optionFound) {
-                    if (!this.state[field.label]) {
-                        FLUIGC.toast({
-                            title: field.label + " não preenchido!",
-                            message: "",
-                            type: "warning"
-                        });
-                        return false;
-                    }
-                }
-            }
+            /* TODO Valida CamposCOmplementares*/
         }
 
+        //Se passou a validacao retorna true
         return true;
-    }
-
-    buscaInfosCategoriaDivergenciaSelecionada() {
-        var options = this.renderOptionsCategoriaDivergencia();
-        var optionFound = options.reduce((acc, optGroup) => {
-            //Busca os optFields da CategoriaDivergencia Selecionada
-            var foundOption = optGroup.options.find((option) => option.value == this.state.CategoriaDivergencia);
-            if (foundOption) {
-                acc = foundOption.optFields;
-            }
-            return acc;
-        }, null);
-
-        return optionFound;
     }
 
     lancarDivergencia() {
         if (this.validaLancamentoDivergencia()) {
             var Movimento = this.state.Movimento;
             var CategoriaSelecionada = this.state.CategoriaDivergencia;
-
-            var optionFound = this.buscaInfosCategoriaDivergenciaSelecionada();
-            var CamposCategoria = [];
-            if (optionFound) {
-                //Cria lista com as informações adicionais da CategoriaDivergencia
-                for (const field of optionFound) {
-                    CamposCategoria.push({
-                        label: field.label,
-                        value: this.state[field.label]
-                    });
-                }
-            }
+            var CamposComplementaresCategoria = this.state.CamposCategoriaDivergencia;
+            var ObservacaoDivergencia = this.state.ObservacaoDivergencia;
 
             var Divergencia = {
-                ID: makeid(6),
-                Coligada: Movimento.Coligada,
-                Identificador: Movimento.IDMOV,
-                Emissao: Movimento.DataEmissao,
-                TipoMovimento: Movimento.CODTMV,
-                Filial: Movimento.Filial,
-                Criacao: getDateNow(),
-                Fornecedor: Movimento.Fornecedor,
-                CGCCFO: Movimento.CGCCFO,
-                Usuario: Movimento.Usuario,
-                Divergencia: {
-                    CategoriaDivergencia: CategoriaSelecionada,
-                    CamposCategoria: CamposCategoria,
-                    ObservacaoDivergencia: this.state.ObservacaoDivergencia
+                CODCOLIGADA: Movimento.Coligada,
+                IDMOV: Movimento.IDMOV,
+                CATEGORIA: CategoriaSelecionada,
+                OBS_DIVERG: {
+                    CamposComplementaresCategoria: CamposComplementaresCategoria,
+                    ObservacaoDivergencia: ObservacaoDivergencia
                 }
             };
-            this.props.onLancamentoDivergencia(Divergencia);
 
-            this.setState({
-                Movimento: {
-                    Coligada: "",
-                    Filial: "",
-                    Fornecedor: "",
-                    CGCCFO: "",
-                    CODTMV: "",
-                    ValorTotal: "",
-                    DataEmissao: "",
-                    Usuario: ""
-                },
-                Itens: [],
-                CategoriaDivergencia: "",
-                ObservacaoDivergencia: ""
+            CriaDivergencia(Divergencia).then(()=>{
+                 //Apos lancar a divergencia limpa os campos
+                 this.setState({
+                    Movimento: {
+                        Coligada: "",
+                        Filial: "",
+                        Fornecedor: "",
+                        CGCCFO: "",
+                        CODTMV: "",
+                        ValorTotal: "",
+                        DataEmissao: "",
+                        Usuario: ""
+                    },
+                    Itens: [],
+                    CategoriaDivergencia: "",
+                    ObservacaoDivergencia: ""
+                });
+                FLUIGC.toast({
+                    title: "Divergência Lançada!!",
+                    message: "",
+                    type: "success"
+                });
             });
-            FLUIGC.toast({
-                title: "Divergência Lançada!!",
-                message: "",
-                type: "success"
-            });
         }
-    }
-
-    handleBuscaMovimento(movimento, itens) {
-        this.setState({
-            Movimento: movimento,
-            Itens: itens
-        });
-    }
-
-    renderOptionsCategoriaDivergencia() {
-        var options = [
-            {
-                label: "Produto", //optGroup
-                options: [
-                    {
-                        label: "Produto no Carimbo Incorreto",
-                        value: "Produto no Carimbo Incorreto",
-                        optFields: [
-                            { label: "Produto Lançado", type: "Produto" },
-                            { label: "Produto Correto", type: "Produto" }
-                        ]
-                    },
-                    {
-                        label: "Produto no Sistema Incorreto",
-                        value: "Produto no Sistema Incorreto",
-                        optFields: [
-                            { label: "Produto Lançado", type: "Produto" },
-                            { label: "Produto Correto", type: "Produto" }
-                        ]
-                    },
-                    { label: "Carimbo sem Descrição do Produto", value: "Carimbo sem Descrição do Produto" }
-                ]
-            },
-            {
-                label: "Itens", //optGroup
-                options: [
-                    {
-                        label: "Descrição Incompleta",
-                        value: "Descrição Incompleta"
-                    },
-                    {
-                        label: "Os Itens não estão Lançados Separadamente",
-                        value: "Os Itens não estão Lançados Separadamente"
-                    },
-                    {
-                        label: "Produto/Classificação Financeira",
-                        value: "Produto/Classificação Financeira",
-                        optFields: [
-                            { label: "Lançado: ", type: "Produto" },
-                            { label: "Correto: ", type: "Produto" }
-                        ]
-                    }
-                ]
-            },
-            {
-                label: "Lançamento", //optGroup
-                options: [
-                    {
-                        label: "Documento Lançado na Filial Incorreta",
-                        value: "Documento Lançado na Filial Incorreta",
-                        optFields: [
-                            { label: "Filial Incorreta", type: "Filial" },
-                            { label: "Filial Correta", type: "Filial" }
-                        ]
-                    },
-                    {
-                        label: "Lançamento no Fornecedor Incorreto",
-                        value: "Lançamento no Fornecedor Incorreto",
-                        optFields: [
-                            { label: "CNPJ Lançado: ", type: "CPF/CNPJ" },
-                            { label: "CNPJ Correto: ", type: "CPF/CNPJ" }
-                        ]
-                    },
-                    {
-                        label: "Emissão Lançada no Sistema",
-                        value: "Emissão Lançada no Sistema",
-                        optFields: [
-                            { label: "Emissão Lançada: ", type: "date" },
-                            { label: "Emissão Correta: ", type: "date" }
-                        ]
-                    },
-                    {
-                        label: "Nº do Documento Lançado no Sistema",
-                        value: "Nº do Documento Lançado no Sistema",
-                        optFields: [
-                            { label: "Nº do Documento Lançado: ", type: "text" },
-                            { label: "Nº do Documento Correto: ", type: "text" }
-                        ]
-                    },
-                    {
-                        label: "Série da Nota Fiscal Lançada no Sistema",
-                        value: "Série da Nota Fiscal Lançada no Sistema",
-                        optFields: [
-                            { label: "Série da Nota Fiscal Lançada: ", type: "text" },
-                            { label: "Série da Nota Fiscal Correta: ", type: "text" }
-                        ]
-                    },
-                    {
-                        label: "Local da Prestação do Serviço Preenchido Incorretamente no Sistema",
-                        value: "Local da Prestação do Serviço Preenchido Incorretamente no Sistema"
-                    },
-                    {
-                        label: "Valor Lançado no Sistema",
-                        value: "Valor Lançado no Sistema",
-                        optFields: [
-                            { label: "Valor Lançado: ", type: "valor" },
-                            { label: "Valor Correto: ", type: "valor" }
-                        ]
-                    }
-                ]
-            },
-            {
-                label: "Carimbo", //optGroup
-                options: [
-                    { label: "Carimbo Incompleto", value: "Carimbo Incompleto" },
-                    { label: "Carimbo em Branco", value: "Carimbo em Branco" },
-                    { label: "NF/Recibo/Guia sem Carimbo", value: "NF/Recibo/Guia sem Carimbo" },
-                    { label: "Sem Sub-Empreiteiro Próximo ao Carimbo", value: "Sem Sub-Empreiteiro Próximo ao Carimbo" },
-                    { label: "Sem Prefixo do Equipamento Próximo ao Carimbo", value: "Sem Prefixo do Equipamento Próximo ao Carimbo" },
-                    { label: "Departamento no Carimbo Divergente com o Lançado no Sistema", value: "Departamento no Carimbo Divergente com o Lançado no Sistema" },
-                    { label: "Centro de Custo no Carimbo Divergente com o Lançado no Sistema", value: "Centro de Custo no Carimbo Divergente com o Lançado no Sistema" },
-                    { label: "Carimbo sem a Descrição do Departamento", value: "Carimbo sem a Descrição do Departamento" },
-                    { label: "Carimbo sem a Descrição do Centro de Custo", value: "Carimbo sem a Descrição do Centro de Custo" },
-                    {
-                        label: "No Carimbo/Sistema o Departamento não faz Sentido com a Descrição do Produto",
-                        value: "No Carimbo/Sistema o Departamento não faz Sentido com a Descrição do Produto",
-                        optFields: [
-                            { label: "Produto", type: "Produto" },
-                            { label: "Departamento", type: "Departamento" }
-                        ]
-                    }
-                ]
-            },
-            {
-                label: "Tipo de Movimento", //optGroup
-                options: [
-                    { label: "Devido a Nnatureza da Operação a NF não Deveria ter sido Lançada Neste Tipo de Movimento", value: "Devido a Nnatureza da Operação a NF não Deveria ter sido Lançada Neste Tipo de Movimento" },
-                    {
-                        label: "Documento Lançado no Tipo de Movimento Incorreto",
-                        value: "Documento Lançado no Tipo de Movimento Incorreto",
-                        optFields: [
-                            { label: "Tipo de Movimento Lançado: ", type: "text" },
-                            { label: "Tipo de Movimento Correto: ", type: "text" }
-                        ]
-                    }
-                ]
-            },
-            {
-                label: "Coligada", //optGroup
-                options: [
-                    { label: "Despesa Devida no Consórcio e Lançada na Castilho", value: "Despesa Devida no Consórcio e Lançada na Castilho" },
-                    { label: "Despesa Devida na Castilho e Lançada no Consórcio", value: "Despesa Devida na Castilho e Lançada no Consórcio" }
-                ]
-            },
-            {
-                label: "Nota Fiscal", //optGroup
-                options: [
-                    { label: "Nota Fiscal de Serviço Pessoa Fisica", value: "Nota Fiscal de Serviço Pessoa Fisica" },
-                    { label: "Ausência do CNPJ na Nota Fiscal/Recibo de Aluguel", value: "Ausência do CNPJ na Nota Fiscal/Recibo de Aluguel" },
-                    { label: "Nota Fiscal sem Emissão", value: "Nota Fiscal sem Emissão" },
-                    { label: "Ausência dos Dados da Castilho na Nota Fiscal/Cupom", value: "Ausência dos Dados da Castilho na Nota Fiscal/Cupom" },
-                    { label: "Nota Fiscal/Cupom não Possui Carimbo", value: "Nota Fiscal/Cupom não Possui Carimbo" },
-                    { label: "NF/Recibo/Guia/Cupom sem Assinatura do Chefe de Escritório e Engenheiro", value: "NF/Recibo/Guia/Cupom sem Assinatura do Chefe de Escritório e Engenheiro" }
-                ]
-            },
-            {
-                label: "Aluguel", //optGroup
-                options: [
-                    { label: "Período do Recibo de Aluguel", value: "Período do Recibo de Aluguel" },
-                    { label: "Recibo de Aluguel sem CPF do Locador", value: "Recibo de Aluguel sem CPF do Locador" },
-                    {
-                        label: "CPF/CNPJ no Recibo de Aluguel Divergente do Lançado no Sistema",
-                        value: "CPF/CNPJ no Recibo de Aluguel Divergente do Lançado no Sistema",
-                        optFields: [
-                            { label: "CPF/CNPJ Lançado: ", type: "CPF/CNPJ" },
-                            { label: "CPF/CNPJ no Recibo: ", type: "CPF/CNPJ" }
-                        ]
-                    },
-                    { label: "Nome do Locador no Recibo de Aluguel está Incorreto", value: "Nome do Locador no Recibo de Aluguel está Incorreto" },
-                    {
-                        label: "Nº no Recibo de Aluguel Divergente do Lançado no Sistema",
-                        value: "Nº no Recibo de Aluguel Divergente do Lançado no Sistema",
-                        optFields: [
-                            { label: "Nº Lançado: ", type: "text" },
-                            { label: "Nº no Recibo: ", type: "text" }
-                        ]
-                    },
-                    {
-                        label: "Emissão no Recibo de Aluguel Divergente da Lançado no Sistema",
-                        value: "Emissão no Recibo de Aluguel Divergente da Lançado no Sistema",
-                        optFields: [
-                            { label: "Emissão Lançada: ", type: "date" },
-                            { label: "Emissão no Recibo: ", type: "date" }
-                        ]
-                    },
-                    {
-                        label: "Valor no Recibo de Aluguel Divergente do Lançado no Sistema",
-                        value: "Valor no Recibo de Aluguel Divergente do Lançado no Sistema",
-                        optFields: [
-                            { label: "Valor Lançado: ", type: "valor" },
-                            { label: "Valor no Recibo: ", type: "valor" }
-                        ]
-                    },
-                    {
-                        label: "Recibo de Aluguel sem o Valor do IPTU",
-                        value: "Recibo de Aluguel sem o Valor do IPTU"
-                    },
-                    {
-                        label: "Valor por Extenso no Recibo de Aluguel está Incorreto",
-                        value: "Valor por Extenso no Recibo de Aluguel está Incorreto"
-                    },
-                    {
-                        label: "Recibo de Aluguel sem o Valor do IRRF",
-                        value: "Recibo de Aluguel sem o Valor do IRRF"
-                    },
-                    {
-                        label: "Recibo de Aluguel de Pessoa Jurídica com Destaque de IR",
-                        value: "Recibo de Aluguel de Pessoa Jurídica com Destaque de IR"
-                    }
-                ]
-            },
-            {
-                label: "Imposto", //optGroup
-                options: [
-                    {
-                        label: "Valor Incorreto do IRRF Lançado no Sistema",
-                        value: "Valor Incorreto do IRRF Lançado no Sistema",
-                        optFields: [
-                            { label: "Valor Lançado", type: "valor" },
-                            { label: "Valor Correto", type: "valor" }
-                        ]
-                    },
-                    {
-                        label: "Valor Incorreto do PIS/COFINS/CSLL Lançado no Sistema",
-                        value: "Valor Incorreto do PIS/COFINS/CSLL Lançado no Sistema",
-                        optFields: [
-                            { label: "Valor Lançado", type: "valor" },
-                            { label: "Valor Correto", type: "valor" }
-                        ]
-                    },
-                    {
-                        label: "Valor Incorreto do ISSRF Lançado no Sistema",
-                        value: "Valor Incorreto do ISSRF Lançado no Sistema",
-                        optFields: [
-                            { label: "Valor Lançado", type: "valor" },
-                            { label: "Valor Correto", type: "valor" }
-                        ]
-                    },
-                    {
-                        label: "Valor Incorreto do INSS Lançado no Sistema",
-                        value: "Valor Incorreto do INSS Lançado no Sistema",
-                        optFields: [
-                            { label: "Valor Lançado", type: "valor" },
-                            { label: "Valor Correto", type: "valor" }
-                        ]
-                    },
-                    {
-                        label: "INSS não Lançado no Sistema",
-                        value: "INSS não Lançado no Sistema"
-                    },
-                    {
-                        label: "IRRF não Lançado no Sistema",
-                        value: "IRRF não Lançado no Sistema"
-                    },
-                    {
-                        label: "PIS/COFINS/CSLL não Lançado no Sistema",
-                        value: "PIS/COFINS/CSLL não Lançado no Sistema"
-                    },
-                    {
-                        label: "ISS Retido não Lançado no Sistema",
-                        value: "ISS Retido não Lançado no Sistema"
-                    },
-                    {
-                        label: "Base de Calculo Incorreta",
-                        value: "Base de Calculo Incorreta"
-                    },
-                    {
-                        label: "Base de Calculo Preenchida Indevidamente",
-                        value: "Base de Calculo Preenchida Indevidamente"
-                    }
-                ]
-            },
-            {
-                label: "RDV",
-                options: [
-                    { label: "Documento RDV Ilegível", value: "Documento RDV Ilegível" },
-                    { label: "Itens do Documento RDV Ilegível", value: "Itens do Documento RDV Ilegível" },
-                    { label: "Valor do Documento RDV Ilegível", value: "Valor do Documento RDV Ilegível" },
-                    { label: "Ausência da Assinatura do Engenheiro no Espelho do RDV", value: "Ausência da Assinatura do Engenheiro no Espelho do RDV" },
-                    { label: "Ausência da Assinatura do Chefe de Escritório no Espelho do RDV", value: "Ausência da Assinatura do Chefe de Escritório no Espelho do RDV" },
-                    { label: "Ausência da Assinatura do Chefe de Escritório e Engenheiro no Espelho do RDV", value: "Ausência da Assinatura do Chefe de Escritório e Engenheiro no Espelho do RDV" },
-                    { label: "Sem Nome do Beneficiário da Passagem", value: "Sem Nome do Beneficiário da Passagem" },
-
-                    {
-                        label: "Produto do RDV Lançado no Sistema",
-                        value: "Produto do RDV Lançado no Sistema",
-                        optFields: [
-                            { label: "Produto Lançado", type: "Produto" },
-                            { label: "Produto Correto", type: "Produto" }
-                        ]
-                    },
-                    { label: "RDV sem Valor do Adiantamento Recebido", value: "RDV sem Valor do Adiantamento Recebido" },
-                    { label: "Ausência das Informações na Capa do RDV", value: "Ausência das Informações na Capa do RDV" },
-                    { label: "Carimbo RDV sem Descrição do Produto", value: "Carimbo RDV sem Descrição do Produto" },
-                    { label: "RDV não Enviado", value: "RDV não Enviado" },
-                    {
-                        label: "Produto no Espelho do RDV",
-                        value: "Produto no Espelho do RDV",
-                        optFields: [
-                            { label: "Produto Lançado: ", type: "Produto" },
-                            { label: "Produto Correto: ", type: "Produto" }
-                        ]
-                    },
-                    { label: "Carimbo RDV em Branco", value: "Carimbo RDV em Branco" },
-                    {
-                        label: "Emissão do RDV Divergente da Lançada no Sistema",
-                        value: "Emissão do RDV Divergente da Lançada no Sistema",
-                        optFields: [
-                            { label: "Emissão do RDV: ", type: "date" },
-                            { label: "Emissão Lançada no Sistema: ", type: "date" }
-                        ]
-                    },
-                    {
-                        label: "Nº do RDV Divergente do Lançado no Sistema",
-                        value: "Nº do RDV Divergente do Lançado no Sistema",
-                        optFields: [
-                            { label: "Nº do RDV: ", type: "text" },
-                            { label: "Nº Lançado no Sistema: ", type: "text" }
-                        ]
-                    },
-                    { label: "Período de Saída e Retorno da Viagem Incompátiveis", value: "Período de Saída e Retorno da Viagem Incompátiveis" },
-                    {
-                        label: "Valor Total do RDV Lançado no Sistema",
-                        value: "Valor Total do RDV Lançado no Sistema",
-                        optFields: [
-                            { label: "Valor Incorreto: ", type: "valor" },
-                            { label: "Valor Correto do RDV: ", type: "valor" }
-                        ]
-                    }
-                ]
-            },
-            {
-                label: "Documento",
-                options: [
-                    { label: "Documento não Enviado", value: "Documento não Enviado" },
-                    { label: "Favor Enviar Original", value: "Favor Enviar Original" },
-                    { label: "Documento Ilegível", value: "Documento Ilegível" },
-                    { label: "O Documento não foi Lançado no Sistema", value: "O Documento não foi Lançado no Sistema" },
-                    { label: "Favor Enviar Comprovante de Pagamento", value: "Favor Enviar Comprovante de Pagamento" },
-                    { label: "Documento não Aceito na Contabilidade", value: "Documento não Aceito na Contabilidade" }
-                ]
-            },
-            {
-                label: "Outros",
-                options: [
-                    { label: "Outros", value: "Outros" },
-                    {
-                        label: "Enviada Apenas Parte da Nota Fiscal",
-                        value: "Enviada Apenas Parte da Nota Fiscal",
-                        optFields: [
-                            {
-                                label: "Quantidade de Folhas Enviadas/Total",
-                                type: "text"
-                            }
-                        ]
-                    },
-                    { label: "Documento não Deveria ser Lançado no Sistema pois não está no Nome da Castilho Engenharia", value: "Documento não Deveria ser Lançado no Sistema pois não está no Nome da Castilho Engenharia" }
-                ]
-            }
-        ];
-
-        return options;
-    }
-
-    renderCamposCategoriaDivergencia() {
-        var options = this.renderOptionsCategoriaDivergencia();
-        var CategoriaSelecionada = this.state.CategoriaDivergencia;
-        var retorno = [<div></div>];
-        var found = options.reduce((acc, optGroup) => {
-            var foundOption = optGroup.options.find((option) => option.value == CategoriaSelecionada);
-            if (foundOption) {
-                acc = foundOption.optFields;
-            }
-            return acc;
-        }, null);
-
-        if (found) {
-            for (const field of found) {
-                retorno.push(
-                    <div className="col-md-4">
-                        <label htmlFor="">{field.label}</label>
-
-                        {field.type == "CPF/CNPJ" ? (
-                            <CNPJInput onChange={(e) => this.handleChangeParametrosDivergencia(field.label, e)} value={this.state[field.label]} />
-                        ) : field.type == "Produto" ? (
-                            <ProdutoInput onChange={(e) => this.handleChangeParametrosDivergencia(field.label, e)} value={this.state[field.label]} />
-                        ) : field.type == "Departamento" ? (
-                            <DepartamentoInput onChange={(e) => this.handleChangeParametrosDivergencia(field.label, e)} value={this.state[field.label]} />
-                        ) : field.type == "date" ? (
-                            <DateInput
-                                onChange={(e) => {
-                                    this.handleChangeParametrosDivergencia(field.label, e);
-                                }}
-                                value={this.state[field.label]}
-                            />
-                        ) : field.type == "Filial" ? (
-                            <FilialInput
-                                onChange={(e) => {
-                                    this.handleChangeParametrosDivergencia(field.label, e);
-                                }}
-                                value={this.state[field.label]}
-                            />
-                        ) : (
-                            <input type="text" name={field.label} id={field.label} className="form-control" value={this.state[field.label]} onChange={(e) => this.handleChangeParametrosDivergencia(e.target.name, e.target.value)} />
-                        )}
-                    </div>
-                );
-            }
-        }
-
-        if (retorno.length < 1) {
-            return <div></div>;
-        }
-        return <div className="row">{retorno}</div>;
     }
 
     renderItens() {
@@ -865,6 +372,7 @@ class Lancamento extends React.Component {
     }
 
     render() {
+        //Busca Codigo e Nome da Coligada
         var coligada = Coligadas.find((e) => {
             return e.CODCOLIGADA == this.state.Movimento.Coligada;
         });
@@ -875,6 +383,7 @@ class Lancamento extends React.Component {
             };
         }
 
+        //Busca Codigo e Nome da Filial
         var filial = Filiais.find((e) => e.CODFILIAL == this.state.Movimento.Filial);
         if (filial) {
             filial = filial.CODFILIAL + " - " + filial.FILIAL;
@@ -884,132 +393,100 @@ class Lancamento extends React.Component {
 
         return (
             <div>
-                <div className="panel panel-primary">
-                    <div className="panel-heading">
-                        <h3 className="panel-title">Movimento</h3>
-                    </div>
-                    <div className="panel-body">
-                        <BuscadorDeMovimento onBuscaMovimento={(e, i) => this.handleBuscaMovimento(e, i)} />
-                        <br />
-                        <div id="Lancamento">
-                            <div className="row">
-                                <div className="col-md-3">
-                                    <div>
-                                        <b>Coligada: </b>
-                                        <span>{coligada.CODCOLIGADA + " - " + coligada.NOME}</span>
-                                    </div>
-                                    <br />
+                <Panel title="Movimento">
+                    <BuscadorDeMovimento
+                        onBuscaMovimento={(movimento, itens) =>
+                            this.setState({
+                                Movimento: movimento,
+                                Itens: itens
+                            })
+                        }
+                    />
+                    <br />
+                    <div id="Lancamento">
+                        <div className="row">
+                            <div className="col-md-3">
+                                <div>
+                                    <b>Coligada: </b>
+                                    <span>{coligada.CODCOLIGADA + " - " + coligada.NOME}</span>
                                 </div>
-                                <div className="col-md-3">
-                                    <div>
-                                        <b>Filial: </b>
-                                        <span>{filial}</span>
-                                    </div>
-                                    <br />
-                                </div>
-                                <div className="col-md-6">
-                                    <div>
-                                        <b>Fornecedor: </b>
-                                        <span>{this.state.Movimento.CGCCFO + " - " + this.state.Movimento.Fornecedor}</span>
-                                    </div>
-                                    <br />
-                                </div>
-                            </div>
-                            <div className="row">
-                                <div className="col-md-3">
-                                    <div>
-                                        <b>Tipo de Movimento: </b>
-                                        <span>{this.state.Movimento.CODTMV}</span>
-                                    </div>
-                                    <br />
-                                </div>
-                                <div className="col-md-3">
-                                    <div>
-                                        <b>Valor Total: </b>
-                                        <MoneySpan text={this.state.Movimento.ValorTotal != "" ? "R$" + parseFloat(this.state.Movimento.ValorTotal).toFixed(2) : ""} />
-                                    </div>
-                                    <br />
-                                </div>
-                                <div className="col-md-3">
-                                    <div>
-                                        <b>Data de Emissão: </b>
-                                        <span>{this.state.Movimento.DataEmissao}</span>
-                                    </div>
-                                    <br />
-                                </div>
-                                <div className="col-md-3">
-                                    <div>
-                                        <b>Usuário: </b>
-                                        <span>{this.state.Movimento.Usuario}</span>
-                                    </div>
-                                    <br />
-                                </div>
-                            </div>
-                            <div className="row" id="ItensMovimento">
                                 <br />
-                                <div className="col-md-12">
-                                    {this.state.Itens.length > 0 && (
-                                        <table className="table table-bordered table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th>Item</th>
-                                                    <th>Produto</th>
-                                                    <th>Qntd.</th>
-                                                    <th>Valor Unit.</th>
-                                                    <th>Valor Total</th>
-                                                </tr>
-                                            </thead>
-                                            {this.renderItens()}
-                                        </table>
-                                    )}
+                            </div>
+                            <div className="col-md-3">
+                                <div>
+                                    <b>Filial: </b>
+                                    <span>{filial}</span>
                                 </div>
+                                <br />
+                            </div>
+                            <div className="col-md-6">
+                                <div>
+                                    <b>Fornecedor: </b>
+                                    <span>{this.state.Movimento.CGCCFO + " - " + this.state.Movimento.Fornecedor}</span>
+                                </div>
+                                <br />
+                            </div>
+                        </div>
+                        <div className="row">
+                            <div className="col-md-3">
+                                <div>
+                                    <b>Tipo de Movimento: </b>
+                                    <span>{this.state.Movimento.CODTMV}</span>
+                                </div>
+                                <br />
+                            </div>
+                            <div className="col-md-3">
+                                <div>
+                                    <b>Valor Total: </b>
+                                    <MoneySpan text={this.state.Movimento.ValorTotal != "" ? "R$" + parseFloat(this.state.Movimento.ValorTotal).toFixed(2) : ""} />
+                                </div>
+                                <br />
+                            </div>
+                            <div className="col-md-3">
+                                <div>
+                                    <b>Data de Emissão: </b>
+                                    <span>{this.state.Movimento.DataEmissao}</span>
+                                </div>
+                                <br />
+                            </div>
+                            <div className="col-md-3">
+                                <div>
+                                    <b>Usuário: </b>
+                                    <span>{this.state.Movimento.Usuario}</span>
+                                </div>
+                                <br />
+                            </div>
+                        </div>
+                        <div className="row" id="ItensMovimento">
+                            <br />
+                            <div className="col-md-12">
+                                {this.state.Itens.length > 0 && (
+                                    <table className="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Item</th>
+                                                <th>Produto</th>
+                                                <th>Qntd.</th>
+                                                <th>Valor Unit.</th>
+                                                <th>Valor Total</th>
+                                            </tr>
+                                        </thead>
+                                        {this.renderItens()}
+                                    </table>
+                                )}
                             </div>
                         </div>
                     </div>
-                </div>
-                <div id="MotivoDivergencia" className="panel panel-primary">
-                    <div className="panel-heading">
-                        <h3 className="panel-title">Motivo da Divergência</h3>
+                </Panel>
+                <Panel title="Motivo da Divergência">
+                    <LancamentoDivergencia CategoriaDivergencia={this.state.CategoriaDivergencia} onChangeCategoriaDivergencia={(e) => this.setState({ CategoriaDivergencia: e })} ObservacaoDivergencia={this.state.ObservacaoDivergencia} onChangeObservacaoDivergencia={(e) => this.setState({ ObservacaoDivergencia: e })} onChangeCamposCategoriaDivergencia={(e) => this.setState({ CamposCategoriaDivergencia: e })} />
+                    <br />
+                    <div style={{ textAlign: "center" }}>
+                        <button className="btn btn-danger" onClick={() => this.lancarDivergencia()}>
+                            Lançar Divergencia
+                        </button>
                     </div>
-                    <div className="panel-body">
-                        <div>
-                            <label htmlFor="">Categoria: </label>
-                            <br />
-                            <antd.Select
-                                options={this.renderOptionsCategoriaDivergencia()}
-                                showSearch
-                                value={this.state.CategoriaDivergencia}
-                                filterOption={(input, option) => {
-                                    if (option.children) {
-                                        return option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
-                                    } else if (option.label) {
-                                        return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
-                                    }
-                                }}
-                                onChange={(e) => this.handleChangeCategoriaDivergencia(e)}
-                                style={{ width: "100%" }}
-                            />
-
-                            <br />
-                            <br />
-                        </div>
-
-                        {this.renderCamposCategoriaDivergencia()}
-
-                        <br />
-                        <div>
-                            <label htmlFor="">Observação: </label>
-                            <textarea rows="4" className="form-control" value={this.state.ObservacaoDivergencia} onChange={(e) => this.setState({ ObservacaoDivergencia: e.target.value })} />
-                        </div>
-
-                        <br />
-                        <div style={{ textAlign: "center" }}>
-                            <button className="btn btn-danger" onClick={() => this.lancarDivergencia()}>
-                                Lançar Divergencia
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                </Panel>
             </div>
         );
     }
@@ -1135,37 +612,540 @@ class BuscadorDeMovimento extends React.Component {
     }
 }
 
-class ErrorBoundary extends React.Component {
+function LancamentoDivergencia({ CategoriaDivergencia, onChangeCategoriaDivergencia, ObservacaoDivergencia, onChangeObservacaoDivergencia, onChangeCamposCategoriaDivergencia }) {
+    const [ListaCategoriasDeDivergencias, setListaCategoriasDeDivergencias] = useState([]);
+    const [CamposComplementaresCategoriasDeDivergencias, setCamposComplementaresCategoriasDeDivergencias] = useState([]);
+
+    useEffect(() => {
+        BuscaCategoriasDivergencia().then((e) => {
+            setListaCategoriasDeDivergencias(e);
+        });
+    }, []);
+
+    useEffect(() => {
+        setCamposComplementaresCategoriasDeDivergencias(BuscaCamposComplementaresCategoriaDivergencia(CategoriaDivergencia));
+    }, [CategoriaDivergencia]);
+
+    useEffect(() => {
+        onChangeCamposCategoriaDivergencia(CamposComplementaresCategoriasDeDivergencias);
+    }, [CamposComplementaresCategoriasDeDivergencias]);
+
+    function handleChangeDadosCamposComplementares(label, value) {
+        var Dados = CamposComplementaresCategoriasDeDivergencias.map((obj) => {
+            if (obj.label == label) {
+                //Altera o Valor quando a label é igual ao parametro label
+                return {
+                    ...obj,
+                    value: value
+                };
+            }
+            return obj;
+        });
+
+        setCamposComplementaresCategoriasDeDivergencias(Dados);
+    }
+
+    function RenderizaCamposComplementaresDaCategoriaDaDivergencia() {
+        var retorno = [];
+        for (const CampoComplementar of CamposComplementaresCategoriasDeDivergencias) {
+            retorno.push(
+                <div className="col-md-4">
+                    <label htmlFor="">{CampoComplementar.label}</label>
+                    {BuscaInputComponenteComBaseNoTipoDeInput(CampoComplementar.type, CampoComplementar.label, BuscaValorDosCamposComplementares(CampoComplementar.label))}
+                </div>
+            );
+        }
+        return <div className="row">{retorno}</div>;
+    }
+
+    function BuscaInputComponenteComBaseNoTipoDeInput(Tipo, label, value) {
+        if (Tipo == "CPF/CNPJ") {
+            return <CNPJInput onChange={(e) => handleChangeDadosCamposComplementares(label, e)} value={value} />;
+        } else if (Tipo == "Produto") {
+            return <ProdutoInput onChange={(e) => handleChangeDadosCamposComplementares(label, e)} value={value} />;
+        } else if (Tipo == "Departamento") {
+            return <DepartamentoInput onChange={(e) => handleChangeDadosCamposComplementares(label, e)} value={value} />;
+        } else if (Tipo == "Data") {
+            return (
+                <DateInput
+                    onChange={(e) => {
+                        handleChangeDadosCamposComplementares(label, e);
+                    }}
+                    value={value}
+                />
+            );
+        } else if (Tipo == "Filial") {
+            return (
+                <FilialInput
+                    onChange={(e) => {
+                        handleChangeDadosCamposComplementares(label, e);
+                    }}
+                    value={value}
+                />
+            );
+        } else {
+            return <input type="text" name={label} id={label} className="form-control" value={value} onChange={(e) => handleChangeDadosCamposComplementares(e.target.name, e.target.value)} />;
+        }
+    }
+
+    function BuscaValorDosCamposComplementares(label) {
+        var found = CamposComplementaresCategoriasDeDivergencias.find((e) => e.label == label);
+        return found.value;
+    }
+
+    return (
+        <div>
+            <div className="CategoriaDivergencia">
+                <label htmlFor="">Categoria: </label>
+                <antd.Select
+                    options={ListaCategoriasDeDivergencias}
+                    showSearch
+                    value={CategoriaDivergencia}
+                    filterOption={(input, option) => {
+                        if (option.children) {
+                            return option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
+                        } else if (option.label) {
+                            return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
+                        }
+                    }}
+                    onChange={(e) => onChangeCategoriaDivergencia(e)}
+                    style={{ width: "100%" }}
+                />
+            </div>
+            <br />
+            <div className="CamposComplementaresCategoriaDivergencia">{RenderizaCamposComplementaresDaCategoriaDaDivergencia()}</div>
+            <br />
+            <div className="ObservacaoDivergencia">
+                <label htmlFor="">Observação: </label>
+                <textarea rows="4" className="form-control" value={ObservacaoDivergencia} onChange={(e) => onChangeObservacaoDivergencia(e.target.value)} />
+            </div>
+        </div>
+    );
+}
+
+class ModalDetalhes extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { hasError: false };
+        this.state = {
+            Movimento: "",
+            Itens: "",
+            MotivoCancelamento: ""
+        };
+        this.BuscaMovimento(this.props.Divergencia.Coligada, this.props.Divergencia.Identificador);
+
+        this.CancelaDivergencia = this.CancelaDivergencia.bind(this); //Bind necessaria pra usar a function em conjunto com o jQuery na funcao componentDidMount
+        this.getMotivoCancelamento = this.getMotivoCancelamento.bind(this); //Bind necessaria pra usar a function em conjunto com o jQuery na funcao componentDidMount
     }
 
-    static getDerivedStateFromError(error) {
-        // Update state so the next render will show the fallback UI.
-        return { hasError: true };
+    BuscaMovimento(CODCOLIGADA, IDMOV) {
+        Promise.all([BuscaMovimentoRM(CODCOLIGADA, IDMOV), BuscaItensMovimentoRM(CODCOLIGADA, IDMOV)])
+            .then((retorno) => {
+                var movimentoRM = retorno[0];
+                var DATASAIDA = movimentoRM.DATASAIDA;
+                DATASAIDA = DATASAIDA.split(" ")[0].split("-").reverse().join("/");
+                var DATAEMISSAO = movimentoRM.DATAEMISSAO;
+                DATAEMISSAO = DATAEMISSAO.split(" ")[0].split("-").reverse().join("/");
+
+                var movimento = {
+                    ID: this.props.Divergencia.ID,
+                    Coligada: this.props.Divergencia.Coligada,
+                    IDMOV: this.props.Divergencia.Identificador,
+                    Filial: movimentoRM.CODFILIAL,
+                    Fornecedor: movimentoRM.FORNECEDOR,
+                    CGCCFO: movimentoRM.CGCCFO,
+                    CODTMV: movimentoRM.CODTMV,
+                    ValorTotal: movimentoRM.VALORBRUTO,
+                    DataEmissao: DATAEMISSAO,
+                    DataCriacao: DATASAIDA,
+                    NumeroMov: movimentoRM.NUMEROMOV,
+                    Serie: movimentoRM.SERIE,
+                    Usuario: movimentoRM.USUARIOCRIACAO
+                };
+
+                var itensRM = retorno[1];
+                var itens = [];
+                for (const item of itensRM) {
+                    itens.push({
+                        Produto: item.PRODUTO,
+                        CodigoProduto: item.CODIGOPRODUTO,
+                        Quantidade: item.QUANTIDADE,
+                        CODUND: item.CODUND,
+                        ValorUnit: item.VALORUNITARIO
+                    });
+                }
+
+                this.setState(
+                    {
+                        Movimento: movimento,
+                        Itens: itens
+                    },
+                    () => {}
+                );
+                //this.props.onBuscaMovimento(movimento, itens);
+            })
+            .catch((e) => {
+                FLUIGC.toast({
+                    title: "Erro ao Buscar Movimento!",
+                    message: "",
+                    type: "warning"
+                });
+                console.log(e);
+
+                var movimento = {
+                    Coligada: "",
+                    IDMOV: "",
+                    Filial: "",
+                    Fornecedor: "",
+                    CGCCFO: "",
+                    CODTMV: "",
+                    ValorTotal: "",
+                    DataEmissao: "",
+                    DataCriacao: "",
+                    NumeroMov: "",
+                    Serie: "",
+                    Usuario: ""
+                };
+
+                var itens = [];
+
+                this.setState({
+                    Movimento: movimento,
+                    Itens: itens
+                });
+                //this.props.onBuscaMovimento(movimento, itens);
+            });
     }
 
-    componentDidCatch(error, errorInfo) {
-        // You can also log the error to an error reporting service
-        console.log(error, errorInfo);
-        FLUIGC.toast({
-            message: errorInfo,
-            type: "danger"
+    renderItens() {
+        var Itens = this.state.Itens;
+        var list = [];
+
+        for (const [Index, item] of Itens.entries()) {
+            list.push(<Item key={Index} ItemIndex={Index} CodigoProduto={item.CodigoProduto} Produto={item.Produto} Quantidade={item.Quantidade} ValorUnit={item.ValorUnit} CODUND={item.CODUND} />);
+        }
+
+        return <tbody>{list}</tbody>;
+    }
+
+    CancelaDivergencia() {
+        this.props.onCancelarDivergencia(this.state.Movimento.ID, this.state.MotivoCancelamento);
+    }
+
+    getMotivoCancelamento() {
+        return this.state.MotivoCancelamento;
+    }
+
+    componentDidMount() {
+        //Caso o usuário tenha clicado no botão Cancelar abre uma Modal pro usuario confirmar se realmente quer cancelar
+        $("[Cancelar-Divergencia]").on("click", { CancelaDivergencia: this.CancelaDivergencia, MotivoCancelamento: this.getMotivoCancelamento }, function (event) {
+            if (!event.data.MotivoCancelamento()) {
+                //Verifica se o motivo do cancelamento foi inserido
+                FLUIGC.toast({
+                    title: "O Motivo do Cancelamento não foi Informado!",
+                    message: "",
+                    type: "warning"
+                });
+                return;
+            } else {
+                var myModal2 = FLUIGC.modal(
+                    {
+                        title: "Deseja Cancelar a Divergência?",
+                        content: "",
+                        id: "fluig-modal2",
+                        size: "large",
+                        actions: [
+                            {
+                                label: "Sim, Desejo Cancelar a Divergência",
+                                classType: "btn-danger",
+                                bind: "Confirma-Cancelar-Divergencia",
+                                autoClose: true
+                            },
+                            {
+                                label: "Não, Fechar sem Cancelar",
+                                autoClose: true
+                            }
+                        ]
+                    },
+                    function (err, data) {
+                        if (!err) {
+                            $("[Confirma-Cancelar-Divergencia]").on("click", function () {
+                                //Caso o usuario escolha que realmente deseja cancelar chama o handler de cancelar a divergencia e fecha a modal
+                                event.data.CancelaDivergencia();
+                                myModal.remove();
+                            });
+                        }
+                    }
+                );
+            }
         });
-        FLUIGC.toast({
-            message: error,
-            type: "danger"
+    }
+
+    renderOptFieldsCategoria() {
+        //Renderiza os campos complementares da Categoria da Divergencia
+        var list = [];
+        var optFields = this.props.Divergencia.Divergencia.CamposCategoria;
+        for (const campo of optFields) {
+            list.push(
+                <div className="col-md-4">
+                    <b>{campo.label}: </b>
+                    <span>{campo.value}</span>
+                </div>
+            );
+        }
+
+        return list;
+    }
+
+    render() {
+        //Busca Codigo e Nome da Coligada
+        var coligada = Coligadas.find((e) => {
+            return e.CODCOLIGADA == this.props.Divergencia.Coligada;
+        });
+        if (coligada == undefined) {
+            coligada = {
+                CODCOLIGADA: "",
+                NOME: ""
+            };
+        }
+
+        //Busca Codigo e Nome da Filial
+        var filial = Filiais.find((e) => e.CODFILIAL == this.state.Movimento.Filial);
+        if (filial) {
+            filial = filial.CODFILIAL + " - " + filial.FILIAL;
+        } else {
+            filial = this.state.Movimento.Filial;
+        }
+
+        return (
+            <div>
+                <Panel title="Lançamento">
+                    <div className="row">
+                        <div className="col-md-3">
+                            <div>
+                                <b>Coligada: </b>
+                                <span>{coligada.CODCOLIGADA + " - " + coligada.NOME}</span>
+                            </div>
+                            <br />
+                        </div>
+                        <div className="col-md-3">
+                            <div>
+                                <b>Filial: </b>
+                                <span>{this.state.Movimento.Filial}</span>
+                            </div>
+                            <br />
+                        </div>
+                        <div className="col-md-6">
+                            <div>
+                                <b>Fornecedor: </b>
+                                <span>{this.state.Movimento.CGCCFO + " - " + this.state.Movimento.Fornecedor}</span>
+                            </div>
+                            <br />
+                        </div>
+                    </div>
+                    <div className="row">
+                        <div className="col-md-3">
+                            <div>
+                                <b>Tipo de Movimento: </b>
+                                <span>{this.state.Movimento.CODTMV}</span>
+                            </div>
+                            <br />
+                        </div>
+                        <div className="col-md-3">
+                            <div>
+                                <b>Valor Total: </b>
+                                <MoneySpan text={this.state.Movimento.ValorTotal != "" ? "R$" + parseFloat(this.state.Movimento.ValorTotal).toFixed(2) : ""} />
+                            </div>
+                            <br />
+                        </div>
+                        <div className="col-md-3">
+                            <div>
+                                <b>Data de Emissão: </b>
+                                <span>{this.state.Movimento.DataEmissao}</span>
+                            </div>
+                            <br />
+                        </div>
+                        <div className="col-md-3">
+                            <div>
+                                <b>Usuário: </b>
+                                <span>{this.state.Movimento.Usuario}</span>
+                            </div>
+                            <br />
+                        </div>
+                    </div>
+                    <div className="row" id="ItensMovimento">
+                        <br />
+                        <div className="col-md-12">
+                            {this.state.Itens.length > 0 && (
+                                <table className="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th>Produto</th>
+                                            <th>Qntd.</th>
+                                            <th>Valor Unit.</th>
+                                            <th>Valor Total</th>
+                                        </tr>
+                                    </thead>
+                                    {this.renderItens()}
+                                </table>
+                            )}
+                        </div>
+                    </div>
+                </Panel>
+
+                <Panel title="Divergência">
+                    <div>
+                        <h3>Divergência: {this.props.Divergencia.Divergencia.CategoriaDivergencia}</h3>
+                        <b>Data de Criação: </b> <span>{this.props.Divergencia.Criacao}</span>
+                    </div>
+                    <div className="row">{this.renderOptFieldsCategoria()}</div>
+                    <br />
+                    {this.props.Divergencia.Divergencia.ObservacaoDivergencia != "" && (
+                        <div>
+                            <b>Observação: </b>
+                            <br />
+
+                            <p>{this.props.Divergencia.Divergencia.ObservacaoDivergencia}</p>
+                        </div>
+                    )}
+                    <br />
+                    <div>
+                        <label htmlFor="" style={{ color: "red" }}>
+                            Cancelar Divergência:{" "}
+                        </label>
+                        <br />
+
+                        {this.props.Divergencia.status != "Cancelado" ? <textarea rows="4" onChange={(e) => this.setState({ MotivoCancelamento: e.target.value })} value={this.state.MotivoCancelamento} className="form-control form-control-danger" /> : <span>{this.props.Divergencia.MotivoCancelamento}</span>}
+                    </div>
+                </Panel>
+            </div>
+        );
+    }
+}
+
+function FiltroListaDivergencias(FiltroObra, FiltroUsuario, FiltroTipoDeMovimento, FiltroPeriodoInicio, FiltroPeriodoFim, FiltroStatus, onChangeFiltro, onBuscarDivergencias) {
+    const [OptionsObras, setOptionsObras] = useState([]);
+    const [OptionsUsuarios, setOptionsUsuarios] = useState([]);
+
+    useEffect(() => {
+        //   BuscaObras();
+        //   BuscaUsuarios();
+    }, []);
+
+    async function BuscaObras() {
+        var usuarios = await ExecutaDataset("DatasetDivergenciasContabilidade", null, [], null);
+        setOptionsObras(usuarios);
+    }
+
+    async function BuscaUsuarios() {
+        var usuarios = await ExecutaDataset("DatasetDivergenciasContabilidade", null, [], null);
+        setOptionsUsuarios(usuarios);
+    }
+
+    return (
+        <div>
+            <div className="row">
+                <div className="col-md-4">
+                    <b>Obra:</b>
+                    <select className="form-control" value={FiltroObra} onChange={(e) => onChangeFiltro("FiltroObra", e.target.value)}></select>
+                </div>
+                <div className="col-md-4">
+                    <b>Usuário:</b>
+                    <select className="form-control" value={FiltroUsuario} onChange={(e) => onChangeFiltro("FiltroUsuario", e.target.value)}></select>
+                </div>
+                <div className="col-md-4">
+                    <b>Tipo de Movimento:</b>
+                    <select className="form-control" value={FiltroTipoDeMovimento} onChange={(e) => onChangeFiltro("FiltroTipoDeMovimento", e.target.value)}>
+                        <option value="Todos">Todos</option>
+                        <option value="1.2.0x">1.2.0x</option>
+                        <option value="1.2.0x">1.2.0x</option>
+                        <option value="1.2.0x">1.2.0x</option>
+                        <option value="1.2.0x">1.2.0x</option>
+                    </select>
+                </div>
+            </div>
+            <br />
+            <div className="row">
+                <div className="col-md-4">
+                    <b>Periodo Inicio:</b>
+                    <DateInput onChange={(e) => this.onChangeFiltro("FiltroPeriodoInicio", e)} value={FiltroPeriodoInicio} />
+                </div>
+                <div className="col-md-4">
+                    <b>Periodo Final:</b>
+                    <DateInput onChange={(e) => this.onChangeFiltro("FiltroPeriodoFim", e)} value={FiltroPeriodoFim} />
+                </div>
+                <div className="col-md-4">
+                    <b>Status:</b>
+                    <select className="form-control" value={FiltroStatus} onChange={(e) => onChangeFiltro("FiltroStatus", e.target.value)}>
+                        <option value="Ativo">Ativo</option>
+                        <option value="Cancelado">Cancelado</option>
+                        <option value="Todos">Todos</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function Item({ ItemIndex, CodigoProduto, Produto, Quantidade, ValorUnit, CODUND }) {
+    return (
+        <tr>
+            <td>
+                <span>{ItemIndex + 1}</span>
+            </td>
+            <td>
+                <span>{CodigoProduto + " - " + Produto}</span>
+            </td>
+            <td>
+                <MoneySpan text={Quantidade + CODUND} />
+            </td>
+            <td>
+                <MoneySpan text={"R$ " + ValorUnit} />
+            </td>
+            <td>
+                <MoneySpan text={"R$ " + (Quantidade * ValorUnit).toFixed(2).toString()} />
+            </td>
+        </tr>
+    );
+}
+
+class Panel extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            detailsIsShown: true
+        };
+    }
+
+    handleClickDetails(e) {
+        if (this.state.detailsIsShown) {
+            $(e.target).closest(".panel").find(".panel-body:first").slideUp();
+        } else {
+            $(e.target).closest(".panel").find(".panel-body:first").slideDown();
+        }
+        this.setState({
+            detailsIsShown: !this.state.detailsIsShown
         });
     }
 
     render() {
-        if (this.state.hasError) {
-            // You can render any custom fallback UI
-            return <h1>Um erro ocorreu! Tente atualizar a página, e caso o erro percista entre em contato com o Administrador do Sistema.</h1>;
-        }
-
-        return this.props.children;
+        return (
+            <div className="panel panel-primary">
+                <div
+                    className="panel-heading"
+                    onClick={(e) => {
+                        this.handleClickDetails(e);
+                    }}
+                >
+                    <div className={"details " + (this.state.detailsIsShown == true ? "detailsHide" : "detailsShow")}></div>
+                    <h4 className="panel-title" style={{ display: "inline-block", verticalAlign: "middle" }}>
+                        {this.props.title}
+                    </h4>
+                </div>
+                <div className="panel-body">{this.props.children}</div>
+            </div>
+        );
     }
 }
 
@@ -1376,339 +1356,70 @@ class MoneySpan extends React.Component {
     }
 }
 
-class ModalDetalhes extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            Movimento: "",
-            Itens: "",
-            MotivoCancelamento: ""
-        };
-        this.BuscaMovimento(this.props.Divergencia.Coligada, this.props.Divergencia.Identificador);
+function DashboardDivergencias() {
+    useEffect(() => {
+        var chart = FLUIGC.chart("#pieChart", {
+            id: "set_an_id_for_my_chart",
+            width: "700",
+            height: "200"
+            /* See the list of options */
+        });
 
-        this.CancelaDivergencia = this.CancelaDivergencia.bind(this); //Bind necessaria pra usar a function em conjunto com o jQuery na funcao componentDidMount
-        this.getMotivoCancelamento = this.getMotivoCancelamento.bind(this); //Bind necessaria pra usar a function em conjunto com o jQuery na funcao componentDidMount
-    }
-
-    BuscaMovimento(CODCOLIGADA, IDMOV) {
-        Promise.all([BuscaMovimentoRM(CODCOLIGADA, IDMOV), BuscaItensMovimentoRM(CODCOLIGADA, IDMOV)])
-            .then((retorno) => {
-                var movimentoRM = retorno[0];
-                var DATASAIDA = movimentoRM.DATASAIDA;
-                DATASAIDA = DATASAIDA.split(" ")[0].split("-").reverse().join("/");
-                var DATAEMISSAO = movimentoRM.DATAEMISSAO;
-                DATAEMISSAO = DATAEMISSAO.split(" ")[0].split("-").reverse().join("/");
-
-                var movimento = {
-                    ID: this.props.Divergencia.ID,
-                    Coligada: this.props.Divergencia.Coligada,
-                    IDMOV: this.props.Divergencia.Identificador,
-                    Filial: movimentoRM.CODFILIAL,
-                    Fornecedor: movimentoRM.FORNECEDOR,
-                    CGCCFO: movimentoRM.CGCCFO,
-                    CODTMV: movimentoRM.CODTMV,
-                    ValorTotal: movimentoRM.VALORBRUTO,
-                    DataEmissao: DATAEMISSAO,
-                    DataCriacao: DATASAIDA,
-                    NumeroMov: movimentoRM.NUMEROMOV,
-                    Serie: movimentoRM.SERIE,
-                    Usuario: movimentoRM.USUARIOCRIACAO
-                };
-
-                var itensRM = retorno[1];
-                var itens = [];
-                for (const item of itensRM) {
-                    itens.push({
-                        Produto: item.PRODUTO,
-                        CodigoProduto: item.CODIGOPRODUTO,
-                        Quantidade: item.QUANTIDADE,
-                        CODUND: item.CODUND,
-                        ValorUnit: item.VALORUNITARIO
-                    });
-                }
-
-                this.setState(
-                    {
-                        Movimento: movimento,
-                        Itens: itens
-                    },
-                    () => {}
-                );
-                //this.props.onBuscaMovimento(movimento, itens);
-            })
-            .catch((e) => {
-                FLUIGC.toast({
-                    title: "Erro ao Buscar Movimento!",
-                    message: "",
-                    type: "warning"
-                });
-                console.log(e);
-
-                var movimento = {
-                    Coligada: "",
-                    IDMOV: "",
-                    Filial: "",
-                    Fornecedor: "",
-                    CGCCFO: "",
-                    CODTMV: "",
-                    ValorTotal: "",
-                    DataEmissao: "",
-                    DataCriacao: "",
-                    NumeroMov: "",
-                    Serie: "",
-                    Usuario: ""
-                };
-
-                var itens = [];
-
-                this.setState({
-                    Movimento: movimento,
-                    Itens: itens
-                });
-                //this.props.onBuscaMovimento(movimento, itens);
-            });
-    }
-
-    renderItens() {
-        var Itens = this.state.Itens;
-        var list = [];
-
-        for (const [Index, item] of Itens.entries()) {
-            list.push(<Item key={Index} ItemIndex={Index} CodigoProduto={item.CodigoProduto} Produto={item.Produto} Quantidade={item.Quantidade} ValorUnit={item.ValorUnit} CODUND={item.CODUND} />);
-        }
-
-        return <tbody>{list}</tbody>;
-    }
-
-    CancelaDivergencia() {
-        this.props.onCancelarDivergencia(this.state.Movimento.ID, this.state.MotivoCancelamento);
-    }
-
-    getMotivoCancelamento() {
-        return this.state.MotivoCancelamento;
-    }
-
-    componentDidMount() {
-        $("[Cancelar-Divergencia]").on("click", { CancelaDivergencia: this.CancelaDivergencia, MotivoCancelamento: this.getMotivoCancelamento }, function (event) {
-            console.log(event.data.MotivoCancelamento());
-            if (!event.data.MotivoCancelamento()) {
-                FLUIGC.toast({
-                    title: "O Motivo do Cancelamento não foi Informado!",
-                    message: "",
-                    type: "warning"
-                });
-                return;
-            } else {
-                var myModal2 = FLUIGC.modal(
-                    {
-                        title: "Deseja Cancelar a Divergência?",
-                        content: "",
-                        id: "fluig-modal2",
-                        size: "large",
-                        actions: [
-                            {
-                                label: "Sim, Desejo Cancelar a Divergência",
-                                classType: "btn-danger",
-                                bind: "Confirma-Cancelar-Divergencia",
-                                autoClose: true
-                            },
-                            {
-                                label: "Não, Fechar sem Cancelar",
-                                autoClose: true
-                            }
-                        ]
-                    },
-                    function (err, data) {
-                        if (!err) {
-                            $("[Confirma-Cancelar-Divergencia]").on("click", function () {
-                                event.data.CancelaDivergencia();
-                                myModal.remove();
-                            });
-                        }
-                    }
-                );
+        var pieChart = chart.pie([
+            {
+                value: 300,
+                color: "#F7464A",
+                highlight: "#FF5A5E",
+                label: "Red"
+            },
+            {
+                value: 50,
+                color: "#46BFBD",
+                highlight: "#5AD3D1",
+                label: "Green"
+            },
+            {
+                value: 100,
+                color: "#FDB45C",
+                highlight: "#FFC870",
+                label: "Yellow"
             }
-        });
-    }
+        ]);
+    }, []);
 
-    renderOptFieldsCategoria() {
-        var list = [];
-
-        var optFields = this.props.Divergencia.Divergencia.CamposCategoria;
-
-        for (const campo of optFields) {
-            list.push(
-                <div className="col-md-4">
-                    <b>{campo.label}: </b>
-                    <span>{campo.value}</span>
-                </div>
-            );
-        }
-
-        return list;
-    }
-
-    render() {
-        var coligada = Coligadas.find((e) => {
-            return e.CODCOLIGADA == this.props.Divergencia.Coligada;
-        });
-        if (coligada == undefined) {
-            coligada = {
-                CODCOLIGADA: "",
-                NOME: ""
-            };
-        }
-
-        var filial = Filiais.find((e) => e.CODFILIAL == this.state.Movimento.Filial);
-        if (filial) {
-            filial = filial.CODFILIAL + " - " + filial.FILIAL;
-        } else {
-            filial = this.state.Movimento.Filial;
-        }
-
-        return (
-            <div>
-                <Panel title="Lançamento">
-                    <div className="row">
-                        <div className="col-md-3">
-                            <div>
-                                <b>Coligada: </b>
-                                <span>{coligada.CODCOLIGADA + " - " + coligada.NOME}</span>
-                            </div>
-                            <br />
-                        </div>
-                        <div className="col-md-3">
-                            <div>
-                                <b>Filial: </b>
-                                <span>{this.state.Movimento.Filial}</span>
-                            </div>
-                            <br />
-                        </div>
-                        <div className="col-md-6">
-                            <div>
-                                <b>Fornecedor: </b>
-                                <span>{this.state.Movimento.CGCCFO + " - " + this.state.Movimento.Fornecedor}</span>
-                            </div>
-                            <br />
-                        </div>
-                    </div>
-                    <div className="row">
-                        <div className="col-md-3">
-                            <div>
-                                <b>Tipo de Movimento: </b>
-                                <span>{this.state.Movimento.CODTMV}</span>
-                            </div>
-                            <br />
-                        </div>
-                        <div className="col-md-3">
-                            <div>
-                                <b>Valor Total: </b>
-                                <MoneySpan text={this.state.Movimento.ValorTotal != "" ? "R$" + parseFloat(this.state.Movimento.ValorTotal).toFixed(2) : ""} />
-                            </div>
-                            <br />
-                        </div>
-                        <div className="col-md-3">
-                            <div>
-                                <b>Data de Emissão: </b>
-                                <span>{this.state.Movimento.DataEmissao}</span>
-                            </div>
-                            <br />
-                        </div>
-                        <div className="col-md-3">
-                            <div>
-                                <b>Usuário: </b>
-                                <span>{this.state.Movimento.Usuario}</span>
-                            </div>
-                            <br />
-                        </div>
-                    </div>
-                    <div className="row" id="ItensMovimento">
-                        <br />
-                        <div className="col-md-12">
-                            {this.state.Itens.length > 0 && (
-                                <table className="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Item</th>
-                                            <th>Produto</th>
-                                            <th>Qntd.</th>
-                                            <th>Valor Unit.</th>
-                                            <th>Valor Total</th>
-                                        </tr>
-                                    </thead>
-                                    {this.renderItens()}
-                                </table>
-                            )}
-                        </div>
-                    </div>
-                </Panel>
-
-                <Panel title="Divergência">
-                    <div>
-                        <h3>Divergência: {this.props.Divergencia.Divergencia.CategoriaDivergencia}</h3>
-                        <b>Data de Criação: </b> <span>{this.props.Divergencia.Criacao}</span>
-                    </div>
-                    <div className="row">{this.renderOptFieldsCategoria()}</div>
-                    <br />
-                    {this.props.Divergencia.Divergencia.ObservacaoDivergencia != "" && (
-                        <div>
-                            <b>Observação: </b>
-                            <br />
-
-                            <p>{this.props.Divergencia.Divergencia.ObservacaoDivergencia}</p>
-                        </div>
-                    )}
-                    <br />
-                    <div>
-                        <label htmlFor="" style={{ color: "red" }}>
-                            Cancelar Divergência:{" "}
-                        </label>
-                        <br />
-
-                        {this.props.Divergencia.status != "Cancelado" ? <textarea rows="4" onChange={(e) => this.setState({ MotivoCancelamento: e.target.value })} value={this.state.MotivoCancelamento} className="form-control form-control-danger" /> : <span>{this.props.Divergencia.MotivoCancelamento}</span>}
-                    </div>
-                </Panel>
-            </div>
-        );
-    }
+    return <div id="pieChart"></div>;
 }
 
-class Panel extends React.Component {
+class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
-
-        this.state = {
-            detailsIsShown: true
-        };
+        this.state = { hasError: false };
     }
 
-    handleClickDetails(e) {
-        if (this.state.detailsIsShown) {
-            $(e.target).closest(".panel").find(".panel-body:first").slideUp();
-        } else {
-            $(e.target).closest(".panel").find(".panel-body:first").slideDown();
-        }
-        this.setState({
-            detailsIsShown: !this.state.detailsIsShown
+    static getDerivedStateFromError(error) {
+        // Update state so the next render will show the fallback UI.
+        return { hasError: true };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        // You can also log the error to an error reporting service
+        console.log(error, errorInfo);
+        FLUIGC.toast({
+            message: errorInfo,
+            type: "danger"
+        });
+        FLUIGC.toast({
+            message: error,
+            type: "danger"
         });
     }
 
     render() {
-        return (
-            <div className="panel panel-primary">
-                <div
-                    className="panel-heading"
-                    onClick={(e) => {
-                        this.handleClickDetails(e);
-                    }}
-                >
-                    <div className={"details " + (this.state.detailsIsShown == true ? "detailsHide" : "detailsShow")}></div>
-                    <h4 className="panel-title" style={{ display: "inline-block", verticalAlign: "middle" }}>
-                        {this.props.title}
-                    </h4>
-                </div>
-                <div className="panel-body">{this.props.children}</div>
-            </div>
-        );
+        if (this.state.hasError) {
+            // You can render any custom fallback UI
+            return <h1>Um erro ocorreu! Tente atualizar a página, e caso o erro percista entre em contato com o Administrador do Sistema.</h1>;
+        }
+
+        return this.props.children;
     }
 }

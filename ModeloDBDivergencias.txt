@@ -5,6 +5,7 @@ CATEGORIA_DIVERGENCIA=>     NOT_NULL, VARCHAR? TABELA SEPARADA?     =>Vou precis
 OBSERVACOES_DIVERGENCIA=>   NULL, JSON? TABELA SEPARADA?            =>Estou usando um JSON tipo o abaixo, mas dependendo da categoria vai ter outros campos pra preencher, então acho mais fácil salvar o JSON como VARCHAR
 STATUS=>                    NOT_NULL, BOOLEAN                       =>Ativo ou Cancelado
 MOTIVO_CANCELAMENTO=>       NULL, VARCHAR
+EMAIL_PENDENTE=>            NOT_NULL, BOOLEAN                       =>Flag se o email notificando a divergencia foi enviado ou não
 
 CREATEDON=>                 NOT_NULL, DATE
 CREATEDBY=>                 NOT_NULL, VARCHAR
@@ -27,6 +28,7 @@ CREATE TABLE DIVERGENCIASCONTABILIDADE (
     OBSERVACOES_DIVERGENCIA VARCHAR(255) NULL,
     STATUS INT NOT NULL,
     MOTIVO_CANCELAMENTO VARCHAR(255) NULL,
+    EMAIL_PENDENTE BOOLEAN NOT NULL,
     CREATEDON DATE NOT NULL,
     CREATEDBY VARCHAR(255) NOT NULL,
     MODIFIEDDON DATE NOT NULL,

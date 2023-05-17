@@ -4,6 +4,7 @@ Departamentos = [];
 Filiais = [];
 myModal = null;
 DataTableDivergencias = null;
+
 function makeid(length) {
 	var result = '';
 	var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -13,24 +14,6 @@ function makeid(length) {
 			charactersLength));
 	}
 	return result;
-}
-
-function getRandomDate() {
-	const startDate = new Date(1900, 0, 1); // Set the start date to 01/01/1900
-	const endDate = new Date(); // Set the end date to today's date
-
-	// Generate a random number of milliseconds between the start and end dates
-	const randomTime = startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime());
-
-	// Create a new Date object using the random time
-	const randomDate = new Date(randomTime);
-
-	// Format the date as DD/MM/YYYY
-	const day = randomDate.getDate().toString().padStart(2, '0');
-	const month = (randomDate.getMonth() + 1).toString().padStart(2, '0');
-	const year = randomDate.getFullYear().toString();
-
-	return `${day}/${month}/${year}`;
 }
 
 function BuscaMovimentoRM(CODCOLIGADA, IDMOV) {
@@ -117,6 +100,7 @@ function BuscaItensMovimentoRM(CODCOLIGADA, IDMOV) {
 }
 
 function BuscaColigadas() {
+	//Joga as coligadas na variavel Global Coligadas
 	DatasetFactory.getDataset("ColigadasRM", null, [], null, {
 		success: (coligadas => {
 			for (const coligada of coligadas.values) {
@@ -137,9 +121,7 @@ function BuscaColigadas() {
 }
 
 function AbreModalDetalhes(Divergencia, onCancelarDivergencia) {
-	console.log(Divergencia);
-
-
+	//Abre a Modal
 	myModal = FLUIGC.modal({
 		title: 'Divergência',
 		content: '<div id="rootModalDetalhes"></div>',
@@ -157,8 +139,8 @@ function AbreModalDetalhes(Divergencia, onCancelarDivergencia) {
 		]
 	}, function (err, data) {
 		if (err) {
-			// do error handling
 		} else {
+			//Apos criar a Modal inicia o <ModalDetalhes/> dentro da Modal
 			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia, onCancelarDivergencia: onCancelarDivergencia }), document.querySelector("#rootModalDetalhes"));
 		}
 	});
@@ -242,6 +224,7 @@ function validaCPF(separacpf) {
 }
 
 function BuscaProdutos(clg) {
+	//Joga os produtos na variavel Global Produtos
 	DatasetFactory.getDataset("consultaProdutoRM", null, [
 		DatasetFactory.createConstraint("clg", clg, clg, ConstraintType.MUST),
 		DatasetFactory.createConstraint("tp", 1, 1, ConstraintType.MUST)
@@ -264,6 +247,7 @@ function BuscaProdutos(clg) {
 }
 
 function BuscaDepartamentos() {
+	//Joga os Departamentos na variavel Global Departamentos
 	DatasetFactory.getDataset("GDEPTO", null, [
 		DatasetFactory.createConstraint("CODCOLIGADA", 1, 1, ConstraintType.MUST),
 		DatasetFactory.createConstraint("CODFILIAL", 1, 1, ConstraintType.MUST),
@@ -282,6 +266,7 @@ function BuscaDepartamentos() {
 }
 
 function BuscaFiliais(CODCOLIGADA) {
+	//Joga as Filiais na variavel Global Filiais
 	DatasetFactory.getDataset("GFILIAL", null, [
 		DatasetFactory.createConstraint("CODCOLIGADA", CODCOLIGADA, CODCOLIGADA, ConstraintType.MUST)
 	], null, {
@@ -307,15 +292,22 @@ function getDateNow() {
 	return day + "/" + month + "/" + year;
 }
 
-function NotificaDivergencias(Divergencias) {
-	console.log(Divergencias)
+function getDateNowSQL() {
+	const date = new Date();
+	const year = date.getFullYear();
+	const month = (date.getMonth() + 1).toString().padStart(2, '0');
+	const day = date.getDate().toString().padStart(2, '0');
 
+	return `${year}-${month}-${day}`;
+}
+
+function NotificaDivergencias(Divergencias) {
 	var Notificacoes = [];
 	for (const Divergencia of Divergencias) {
 		var found = Notificacoes.find(e => e.Usuario == Divergencia.Usuario)
 
 		if (found) {
-			found.Divergencias.push( Divergencia )
+			found.Divergencias.push(Divergencia)
 		}
 		else {
 			Notificacoes.push({
@@ -333,7 +325,7 @@ function NotificaDivergencias(Divergencias) {
 	var html = "";
 	for (const Notificacao of Notificacoes) {
 		html = "";
-		html+="<div>"
+		html += "<div>"
 
 		html += "<p>Segue abaixo, divergências referentes ao Relatório de Compromissos Cadastrados/Fundo Fixo.</p>";
 
@@ -341,7 +333,7 @@ function NotificaDivergencias(Divergencias) {
 		html += "<p>Favor observar as divergências e a correção para a realização dos próximos lançamentos.</p><br/><br/>";
 
 		html += "<div align='center'>"
-        html += '<table border="0" cellpadding="2" cellspacing="0" id="bodyTable" border="1">'
+		html += '<table border="0" cellpadding="2" cellspacing="0" id="bodyTable" border="1">'
 		html += "<thead>"
 		html += "<tr>"
 		html += "<th>Emissão</th>"
@@ -375,18 +367,15 @@ function NotificaDivergencias(Divergencias) {
 		html += "</div>"
 		html += "<br/><br/>"
 
-		html += "<p>Qualquer dúvida entrar em contato com a Contabilidade.</p>"
-		html+="</div>"
-
-
-
+		html += "<p>Qualquer dúvida entrar em contato com a Contabilidade, ou acesse o <a href='#'>Painel de Divergências no Fluig</a>.</p>"
+		html += "</div>"
 	}
 
-	EnviaEmail(html);
+	EnviaEmail(html, DivergenciaNotificacao.Usuario);
 
 }
 
-function EnviaEmail(CorpoEmail) {
+function EnviaEmail(CorpoEmail, usuario) {
 	//var url = 'http://fluig.castilho.com.br:1010';//Prod
 	var url = 'http://homologacao.castilho.com.br:2020';//Homolog
 
@@ -396,14 +385,14 @@ function EnviaEmail(CorpoEmail) {
 		"to": "gabriel.persike@castilho.com.br",
 		//from: "fluig@construtoracastilho.com.br", //Prod
 		from: "no-reply@construtoracastilho.com.br", //Homolog
-		"subject": "Divergências Contabilidade", //   subject
+		"subject": "Divergências Contabilidade - " + usuario, //   subject
 		"templateId": "TPL_PADRAO_CASTILHO", // Email template Id previously registered
 		"dialectId": "pt_BR", //Email dialect , if not informed receives pt_BR , email dialect ("pt_BR", "en_US", "es")
 		"param": {
 			"CORPO_EMAIL": CorpoEmail,
 			"SERVER_URL": url,
 			"TENANT_ID": "1"
-		} //  Map with variables to be replaced in the template
+		}
 	};
 
 	$.ajax({
@@ -413,7 +402,11 @@ function EnviaEmail(CorpoEmail) {
 		data: JSON.stringify(data)
 	})
 		.done(function (data) {
-		
+			FLUIGC.toast({
+				title: "E-mail enviado com exito!",
+				message: "",
+				type: "warning"
+			});
 		})
 		.fail(function (jqXHR, textStatus, errorThrown) {
 			FLUIGC.toast({
@@ -422,4 +415,151 @@ function EnviaEmail(CorpoEmail) {
 			});
 			//Falha
 		});
+}
+
+function ExecutaDataset(DatasetName, Fields, Constraints, Order) {
+	return new Promise((resolve, reject) => {
+		DatasetFactory.getDataset(DatasetName, Fields, Constraints, Order, {
+			success: (ds => {
+				if (!ds || !ds.values || ds.values.length == 0 || (ds.values[0][0] == "deu erro! " && ds.values[0][1] != "com.microsoft.sqlserver.jdbc.SQLServerException: A instrução não retornou um conjunto de resultados.")) {
+					console.error("Erro ao executar o Dataset: " + DatasetName);
+					console.error(ds);
+					FLUIGC.toast({
+						title: "Erro ao executar o Dataset: " + DatasetName,
+						message: "",
+						type: "warning"
+					});
+					reject();
+				}
+				else {
+					resolve(ds.values);
+				}
+			}),
+			error: (e => {
+				console.error("Erro ao executar o Dataset: " + DatasetName);
+				console.error(e);
+				FLUIGC.toast({
+					title: "Erro ao executar o Dataset: " + DatasetName,
+					message: "",
+					type: "warning"
+				});
+				reject();
+			})
+		})
+	});
+}
+
+function CriaGrupoDivergencias(GRUPO, DESCRICAO) {
+	var ds = ExecutaDataset("DatasetDivergenciasContabilidade", null, [
+		DatasetFactory.createConstraint("Operacao", "InsertCategoriaDivergencia", "InsertCategoriaDivergencia", ConstraintType.MUST),
+		DatasetFactory.createConstraint("CategoriaDivergencia", JSON.stringify({ GRUPO: GRUPO, DESCRICAO: DESCRICAO }), JSON.stringify({ GRUPO: GRUPO, DESCRICAO: DESCRICAO }), ConstraintType.MUST),
+	], null)
+	console.log(ds)
+
+}
+
+async function BuscaCategoriasDivergencia() {
+	var categorias = await ExecutaDataset("DatasetDivergenciasContabilidade", null, [DatasetFactory.createConstraint("Operacao", "BuscaCategoriaDivergencia", "BuscaCategoriaDivergencia", ConstraintType.MUST)], null);
+	var options = [];
+
+	for (const Categoria of categorias) {
+		options.push({ label: Categoria.DESCRICAO, value: Categoria.ID });
+	}
+
+	return options;
+}
+
+function BuscaCamposComplementaresCategoriaDivergencia(ID) {
+	var ListaCategorias = [
+		{
+			ID: 1,
+			optFields: [
+				{ label: "Produto Lançado: ", type: "Produto" },
+				{ label: "Produto Correto: ", type: "Produto" }
+			]
+		}
+	]
+
+	var found = ListaCategorias.find(e => e.ID == ID);
+
+	if (found) {
+		return found.optFields;
+	}
+	else {
+		return [];
+	}
+}
+
+function CriaDivergencia(Divergencia) {
+	return new Promise(async (resolve, reject) => {
+		try {
+			//Insere outras colunas que são padrão de todo Insert
+			Divergencia.CREATEDON = getDateNowSQL();
+			Divergencia.CREATEDBY = WCMAPI.userCode;
+			Divergencia.MODIFIEDON = getDateNowSQL();
+			Divergencia.MODIFIEDBY = WCMAPI.userCode;
+			Divergencia.EMAIL_PEND = 1;
+			Divergencia.MOTIVO_CANC = null;
+			Divergencia.STATUS = 1;
+
+			await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
+				DatasetFactory.createConstraint("Operacao", "InsertDivergencia", "InsertDivergencia", ConstraintType.MUST),
+				DatasetFactory.createConstraint("Divergencia", JSON.stringify(Divergencia), JSON.stringify(Divergencia), ConstraintType.MUST)
+			], null);
+
+			resolve();
+		} catch (error) {
+			reject();
+		}
+	});
+}
+
+function BuscaDivergencias() {
+	return new Promise(async (resolve, reject) => {
+		try {
+			var Divergencias = await BuscaListaDeDivergencias();
+			var Movimentos = await BuscaMovimentosDasDivergencias(Divergencias);
+			Divergencias = InsereNasDivergenciasAsInformacoesDoMovimento(Divergencias, Movimentos);
+			resolve(Divergencias);
+		} catch (error) {
+			console.error(error);
+			reject();
+		}
+	});
+
+	async function BuscaListaDeDivergencias() {
+		return await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
+			DatasetFactory.createConstraint("Operacao", "BuscaDivergencias", "BuscaDivergencias", ConstraintType.MUST)
+		], null);
+	}
+
+	async function BuscaMovimentosDasDivergencias(Divergencias) {
+		//Extrai CODCOLIGADA e IDMOV das Divergencias
+		var ListaDeCODCOLIGADAeIDMOV = Divergencias.map(({ CODCOLIGADA, IDMOV }) => ({ CODCOLIGADA, IDMOV }));
+		return await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
+			DatasetFactory.createConstraint("Operacao", "BuscaMovimentos", "BuscaMovimentos", ConstraintType.MUST),
+			DatasetFactory.createConstraint("Movimentos", JSON.stringify(ListaDeCODCOLIGADAeIDMOV), JSON.stringify(ListaDeCODCOLIGADAeIDMOV), ConstraintType.MUST)
+		], null);
+	}
+
+	function InsereNasDivergenciasAsInformacoesDoMovimento(Divergencias, Movimentos) {
+		return Divergencias.map(Divergencia => {
+			var Movimento = Movimentos.find(e => e.CODCOLIGADA == Divergencia.CODCOLIGADA && e.IDMOV == Divergencia.IDMOV);
+
+			Divergencia.OBS_DIVERG = JSON.parse(Divergencia.OBS_DIVERG)
+			const {COLIGADA, CODFILIAL, FILIAL, FORNECEDOR, CGCCFO, CODTMV, CODUSUARIO, DATAEMISSAO, VALORBRUTO } = Movimento;
+			return {
+				...Divergencia,
+				COLIGADA,
+				CODFILIAL,
+				FILIAL,
+				FORNECEDOR,
+				CGCCFO,
+				CODTMV,
+				CODUSUARIO,
+				DATAEMISSAO,
+				VALORBRUTO
+			}
+		});
+	}
 }

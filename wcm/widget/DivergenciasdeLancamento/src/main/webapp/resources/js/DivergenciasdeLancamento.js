@@ -4,7 +4,7 @@ var DivergenciasdeLancamento = SuperWidget.extend({
         BuscaColigadas();
         BuscaDepartamentos();
         setTimeout(() => {
-            ReactDOM.render(React.createElement(InformacoesIniciais), document.querySelector("#AppRoot"));
+            ReactDOM.render(React.createElement(AppRoot), document.querySelector("#AppRoot"));
         }, 1000);
     }
 });
