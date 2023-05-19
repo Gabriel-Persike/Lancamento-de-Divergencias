@@ -122,6 +122,7 @@ function BuscaColigadas() {
 
 function AbreModalDetalhes(Divergencia, onCancelarDivergencia) {
 	//Abre a Modal
+	console.log(Divergencia);
 	myModal = FLUIGC.modal({
 		title: 'Divergência',
 		content: '<div id="rootModalDetalhes"></div>',
