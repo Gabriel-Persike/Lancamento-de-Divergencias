@@ -1,5 +1,6 @@
 const useEffect = React.useEffect;
 const useState = React.useState;
+const Select = antd.Select;
 
 class AppRoot extends React.Component {
     constructor(props) {
@@ -733,22 +734,24 @@ function ListaDivergencias({ Divergencias, onCancelarDivergencia }) {
     );
 }
 
-function FiltroListaDivergencias(FiltroObra, FiltroUsuario, FiltroTipoDeMovimento, FiltroPeriodoInicio, FiltroPeriodoFim, FiltroStatus, onChangeFiltro, onBuscarDivergencias) {
+function FiltroListaDivergencias({FiltroObra, FiltroUsuario, FiltroTipoDeMovimento, FiltroPeriodoInicio, FiltroPeriodoFim, FiltroStatus, onChangeFiltro, onBuscarDivergencias}) {
     const [OptionsObras, setOptionsObras] = useState([]);
     const [OptionsUsuarios, setOptionsUsuarios] = useState([]);
 
     useEffect(() => {
-        //   BuscaObras();
-        //   BuscaUsuarios();
+        CriaListaNoFiltroPorObra();
+        CriaListaNoFiltroPorUsuario();
     }, []);
 
-    async function BuscaObras() {
-        var usuarios = await ExecutaDataset("DatasetDivergenciasContabilidade", null, [], null);
-        setOptionsObras(usuarios);
+    async function CriaListaNoFiltroPorObra() {
+        var obras = await BuscaObras();
+        obras = obras.map(e => { return { label: e.CODCCUSTO + " - " + e.perfil, value: e.CODCCUSTO } });
+        setOptionsObras(obras);
     }
 
-    async function BuscaUsuarios() {
-        var usuarios = await ExecutaDataset("DatasetDivergenciasContabilidade", null, [], null);
+    async function CriaListaNoFiltroPorUsuario() {
+        var usuarios = await ExecutaDataset("colleague", ["colleagueId"], [], null);
+        usuarios = usuarios.map(e => { return { label: e.colleagueId, value: e.colleagueId } });
         setOptionsUsuarios(usuarios);
     }
 
@@ -757,11 +760,16 @@ function FiltroListaDivergencias(FiltroObra, FiltroUsuario, FiltroTipoDeMoviment
             <div className="row">
                 <div className="col-md-4">
                     <b>Obra:</b>
-                    <select className="form-control" value={FiltroObra} onChange={(e) => onChangeFiltro("FiltroObra", e.target.value)}></select>
+                    <Select style={{ width: "100%" }} showSearch filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
+                        options={OptionsObras}
+                        value={FiltroObra} onChange={(e) => onChangeFiltro("FiltroObra", e)}
+                    />
                 </div>
                 <div className="col-md-4">
                     <b>Usuário:</b>
-                    <select className="form-control" value={FiltroUsuario} onChange={(e) => onChangeFiltro("FiltroUsuario", e.target.value)}></select>
+                    <Select style={{ width: "100%" }} showSearch filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
+                        options={OptionsUsuarios}
+                        value={FiltroUsuario} onChange={(e) => onChangeFiltro("FiltroUsuario", e)} />
                 </div>
                 <div className="col-md-4">
                     <b>Tipo de Movimento:</b>

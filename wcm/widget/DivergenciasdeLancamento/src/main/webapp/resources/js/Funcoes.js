@@ -218,7 +218,7 @@ function BuscaDivergencias() {
 			var Movimento = Movimentos.find(e => e.CODCOLIGADA == Divergencia.CODCOLIGADA && e.IDMOV == Divergencia.IDMOV);
 
 			Divergencia.OBS_DIVERG = JSON.parse(Divergencia.OBS_DIVERG)
-			const {COLIGADA, CODFILIAL, FILIAL, FORNECEDOR, CGCCFO, CODTMV, CODUSUARIO, DATAEMISSAO, VALORBRUTO } = Movimento;
+			const { COLIGADA, CODFILIAL, FILIAL, FORNECEDOR, CGCCFO, CODTMV, CODUSUARIO, DATAEMISSAO, VALORBRUTO } = Movimento;
 			return {
 				...Divergencia,
 				COLIGADA,
@@ -553,11 +553,11 @@ function getDateNowSQL() {
 	return `${year}-${month}-${day}`;
 }
 
-function ExecutaDataset(DatasetName, Fields, Constraints, Order) {
+function ExecutaDataset(DatasetName, Fields, Constraints, Order, AceitaRetornarVazio = false) {
 	return new Promise((resolve, reject) => {
 		DatasetFactory.getDataset(DatasetName, Fields, Constraints, Order, {
 			success: (ds => {
-				if (!ds || !ds.values || ds.values.length == 0 || (ds.values[0][0] == "deu erro! " && ds.values[0][1] != "com.microsoft.sqlserver.jdbc.SQLServerException: A instrução não retornou um conjunto de resultados.")) {
+				if (!ds || !ds.values || (ds.values.length == 0 && !AceitaRetornarVazio) || (ds.values[0][0] == "deu erro! " && ds.values[0][1] != "com.microsoft.sqlserver.jdbc.SQLServerException: A instrução não retornou um conjunto de resultados.")) {
 					console.error("Erro ao executar o Dataset: " + DatasetName);
 					console.error(ds);
 					FLUIGC.toast({
@@ -585,7 +585,32 @@ function ExecutaDataset(DatasetName, Fields, Constraints, Order) {
 	});
 }
 
+async function UsuarioTemPermissaoGeral(user) {
+	try {
+		var grupos = await ExecutaDataset("colleagueGroup", null, [
+			DatasetFactory.createConstraint("colleagueId", user, user, ConstraintType.MUST),
+			DatasetFactory.createConstraint("groupId", "Contabilidade", "Contabilidade", ConstraintType.SHOULD),
+			DatasetFactory.createConstraint("groupId", "Administrador TI", "Administrador TI", ConstraintType.SHOULD)
+		], null, true);
 
+		if (grupos.length > 0) {
+			return true;
+		}
+	} catch (error) {
+		return false;
+	}
+}
 
+async function BuscaObras() {
+	var user = WCMAPI.userCode;
+	var permissoes = await ExecutaDataset("BuscaPermissaoColigadasUsuario", null, [
+		(await UsuarioTemPermissaoGeral(user) ? 
+			DatasetFactory.createConstraint("permissaoGeral", "true", "true", ConstraintType.MUST) : 
+			DatasetFactory.createConstraint("usuario", user, user, ConstraintType.MUST)
+		)
+	], null);
+
+	return 	permissoes.filter(e=> e.CODCOLIGADA == 1).map(({CODCCUSTO, perfil}) => ({CODCCUSTO, perfil}))
+}
 
 
