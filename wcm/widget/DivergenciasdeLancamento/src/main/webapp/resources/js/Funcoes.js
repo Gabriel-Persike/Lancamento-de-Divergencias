@@ -5,15 +5,101 @@ Filiais = [];
 myModal = null;
 DataTableDivergencias = null;
 
-function makeid(length) {
-	var result = '';
-	var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	var charactersLength = characters.length;
-	for (var i = 0; i < length; i++) {
-		result += characters.charAt(Math.floor(Math.random() *
-			charactersLength));
-	}
-	return result;
+function BuscaColigadas() {
+	//Joga as coligadas na variavel Global Coligadas
+	DatasetFactory.getDataset("ColigadasRM", null, [], null, {
+		success: (coligadas => {
+			for (const coligada of coligadas.values) {
+				Coligadas.push({
+					CODCOLIGADA: coligada.codcoligada,
+					NOME: coligada.nomefantasia,
+				});
+			}
+		}),
+		error: (error => {
+			FLUIGC.toast({
+				title: "Erro ao buscar coligadas: ",
+				message: error,
+				type: warning
+			});
+		})
+	});
+}
+
+function BuscaProdutos(clg) {
+	//Joga os produtos na variavel Global Produtos
+	DatasetFactory.getDataset("consultaProdutoRM", null, [
+		DatasetFactory.createConstraint("clg", clg, clg, ConstraintType.MUST),
+		DatasetFactory.createConstraint("tp", 1, 1, ConstraintType.MUST)
+	], null, {
+		success: (produtos => {
+			for (const produto of produtos.values) {
+				Produtos.push({
+					value: produto.CODIGOPRD + " - " + produto.NOMEFANTASIA
+				});
+			}
+		}),
+		error: (error => {
+			FLUIGC.toast({
+				title: "Erro ao buscar Produtos: ",
+				message: error,
+				type: warning
+			});
+		})
+	});
+}
+
+function BuscaDepartamentos() {
+	//Joga os Departamentos na variavel Global Departamentos
+	DatasetFactory.getDataset("GDEPTO", null, [
+		DatasetFactory.createConstraint("CODCOLIGADA", 1, 1, ConstraintType.MUST),
+		DatasetFactory.createConstraint("CODFILIAL", 1, 1, ConstraintType.MUST),
+		DatasetFactory.createConstraint("ATIVO", "T", "T", ConstraintType.MUST)
+	], null, {
+		success: (ds => {
+			Departamentos = [];
+			for (const departamento of ds.values) {
+				Departamentos.push({
+					label: departamento.CODDEPARTAMENTO + " - " + departamento.NOME,
+					value: departamento.CODDEPARTAMENTO + " - " + departamento.NOME
+				});
+			}
+		})
+	});
+}
+
+function BuscaFiliais(CODCOLIGADA) {
+	//Joga as Filiais na variavel Global Filiais
+	DatasetFactory.getDataset("GFILIAL", null, [
+		DatasetFactory.createConstraint("CODCOLIGADA", CODCOLIGADA, CODCOLIGADA, ConstraintType.MUST)
+	], null, {
+		success: (ds => {
+			Filiais = [];
+			for (const filial of ds.values) {
+				Filiais.push({
+					CODFILIAL: filial.CODFILIAL,
+					FILIAL: filial.NOMEFANTASIA
+				});
+			}
+		})
+	});
+}
+
+function BuscaFiliais(CODCOLIGADA) {
+	//Joga as Filiais na variavel Global Filiais
+	DatasetFactory.getDataset("GFILIAL", null, [
+		DatasetFactory.createConstraint("CODCOLIGADA", CODCOLIGADA, CODCOLIGADA, ConstraintType.MUST)
+	], null, {
+		success: (ds => {
+			Filiais = [];
+			for (const filial of ds.values) {
+				Filiais.push({
+					CODFILIAL: filial.CODFILIAL,
+					FILIAL: filial.NOMEFANTASIA
+				});
+			}
+		})
+	});
 }
 
 function BuscaMovimentoRM(CODCOLIGADA, IDMOV) {
@@ -99,207 +185,118 @@ function BuscaItensMovimentoRM(CODCOLIGADA, IDMOV) {
 	});
 }
 
-function BuscaColigadas() {
-	//Joga as coligadas na variavel Global Coligadas
-	DatasetFactory.getDataset("ColigadasRM", null, [], null, {
-		success: (coligadas => {
-			for (const coligada of coligadas.values) {
-				Coligadas.push({
-					CODCOLIGADA: coligada.codcoligada,
-					NOME: coligada.nomefantasia,
-				});
-			}
-		}),
-		error: (error => {
-			FLUIGC.toast({
-				title: "Erro ao buscar coligadas: ",
-				message: error,
-				type: warning
-			});
-		})
-	});
-}
-
-function AbreModalDetalhes(Divergencia, onCancelarDivergencia) {
-	//Abre a Modal
-	console.log(Divergencia);
-	myModal = FLUIGC.modal({
-		title: 'Divergência',
-		content: '<div id="rootModalDetalhes"></div>',
-		id: 'fluig-modal',
-		size: 'full',
-		actions: [
-			{
-				"label": "Cancelar",
-				"classType": "btn-danger",
-				"bind": "Cancelar-Divergencia"
-			}, {
-				'label': 'Fechar',
-				'autoClose': true
-			}
-		]
-	}, function (err, data) {
-		if (err) {
-		} else {
-			//Apos criar a Modal inicia o <ModalDetalhes/> dentro da Modal
-			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia, onCancelarDivergencia: onCancelarDivergencia }), document.querySelector("#rootModalDetalhes"));
+function BuscaDivergencias() {
+	return new Promise(async (resolve, reject) => {
+		try {
+			var Divergencias = await BuscaListaDeDivergencias();
+			var Movimentos = await BuscaMovimentosDasDivergencias(Divergencias);
+			Divergencias = InsereNasDivergenciasAsInformacoesDoMovimento(Divergencias, Movimentos);
+			resolve(Divergencias);
+		} catch (error) {
+			console.error(error);
+			reject();
 		}
 	});
+
+	async function BuscaListaDeDivergencias() {
+		return await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
+			DatasetFactory.createConstraint("Operacao", "BuscaDivergencias", "BuscaDivergencias", ConstraintType.MUST)
+		], null);
+	}
+
+	async function BuscaMovimentosDasDivergencias(Divergencias) {
+		//Extrai CODCOLIGADA e IDMOV das Divergencias
+		var ListaDeCODCOLIGADAeIDMOV = Divergencias.map(({ CODCOLIGADA, IDMOV }) => ({ CODCOLIGADA, IDMOV }));
+		return await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
+			DatasetFactory.createConstraint("Operacao", "BuscaMovimentos", "BuscaMovimentos", ConstraintType.MUST),
+			DatasetFactory.createConstraint("Movimentos", JSON.stringify(ListaDeCODCOLIGADAeIDMOV), JSON.stringify(ListaDeCODCOLIGADAeIDMOV), ConstraintType.MUST)
+		], null);
+	}
+
+	function InsereNasDivergenciasAsInformacoesDoMovimento(Divergencias, Movimentos) {
+		return Divergencias.map(Divergencia => {
+			var Movimento = Movimentos.find(e => e.CODCOLIGADA == Divergencia.CODCOLIGADA && e.IDMOV == Divergencia.IDMOV);
+
+			Divergencia.OBS_DIVERG = JSON.parse(Divergencia.OBS_DIVERG)
+			const {COLIGADA, CODFILIAL, FILIAL, FORNECEDOR, CGCCFO, CODTMV, CODUSUARIO, DATAEMISSAO, VALORBRUTO } = Movimento;
+			return {
+				...Divergencia,
+				COLIGADA,
+				CODFILIAL,
+				FILIAL,
+				FORNECEDOR,
+				CGCCFO,
+				CODTMV,
+				CODUSUARIO,
+				DATAEMISSAO,
+				VALORBRUTO
+			}
+		});
+	}
 }
 
-function validarCNPJ(cnpj) {
-	cnpj = cnpj.replace(/[^\d]+/g, "");
-	if (cnpj == "") return false;
+async function BuscaCategoriasDivergencia() {
+	var categorias = await ExecutaDataset("DatasetDivergenciasContabilidade", null, [DatasetFactory.createConstraint("Operacao", "BuscaCategoriaDivergencia", "BuscaCategoriaDivergencia", ConstraintType.MUST)], null);
+	var options = [];
 
-	if (cnpj.length != 14) return false;
-
-	// Elimina CNPJs invalidos conhecidos
-	if (cnpj == "00000000000000" || cnpj == "11111111111111" || cnpj == "22222222222222" || cnpj == "33333333333333" || cnpj == "44444444444444" || cnpj == "55555555555555" || cnpj == "66666666666666" || cnpj == "77777777777777" || cnpj == "88888888888888" || cnpj == "99999999999999") return false;
-
-	// Valida DVs
-	tamanho = cnpj.length - 2;
-	numeros = cnpj.substring(0, tamanho);
-	digitos = cnpj.substring(tamanho);
-	soma = 0;
-	pos = tamanho - 7;
-	for (i = tamanho; i >= 1; i--) {
-		soma += numeros.charAt(tamanho - i) * pos--;
-		if (pos < 2) pos = 9;
+	for (const Categoria of categorias) {
+		options.push({ label: Categoria.DESCRICAO, value: Categoria.ID });
 	}
-	resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
-	if (resultado != digitos.charAt(0)) return false;
 
-	tamanho = tamanho + 1;
-	numeros = cnpj.substring(0, tamanho);
-	soma = 0;
-	pos = tamanho - 7;
-	for (i = tamanho; i >= 1; i--) {
-		soma += numeros.charAt(tamanho - i) * pos--;
-		if (pos < 2) pos = 9;
-	}
-	resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
-	if (resultado != digitos.charAt(1)) return false;
-
-	return true;
+	return options;
 }
 
-function validaCPF(separacpf) {
-	// Verificado em 18/05/2017 conforme: http://www.receita.fazenda.gov.br/aplicacoes/atcta/cpf/funcoes.js
-	// 0: válido; 1: inválido
-	separacpf = separacpf.replace(/[^\d]+/g, "");
-
-	var retorno = 0;
-	var num1 = separacpf[0];
-	var num2 = separacpf[1];
-	var num3 = separacpf[2];
-	var num4 = separacpf[3];
-	var num5 = separacpf[4];
-	var num6 = separacpf[5];
-	var num7 = separacpf[6];
-	var num8 = separacpf[7];
-	var num9 = separacpf[8];
-	var num10 = separacpf[9];
-	var num11 = separacpf[10];
-	if (num1 == num2 && num2 == num3 && num3 == num4 && num4 == num5 && num5 == num6 && num6 == num7 && num7 == num8 && num8 == num9 && num9 == num10) {
-		return false;
-	} else {
-		var soma1 = num1 * 10 + num2 * 9 + num3 * 8 + num4 * 7 + num5 * 6 + num6 * 5 + num7 * 4 + num8 * 3 + num9 * 2;
-		var resto1 = (soma1 * 10) % 11;
-		if (resto1 == 10 || resto1 == 11) {
-			resto1 = 0;
+function BuscaCamposComplementaresCategoriaDivergencia(ID) {
+	var ListaCategorias = [
+		{
+			ID: 1,
+			optFields: [
+				{ label: "Produto Lançado: ", type: "Produto" },
+				{ label: "Produto Correto: ", type: "Produto" }
+			]
 		}
-		if (num10 != resto1) {
-			return false;
-		} else {
-			var soma2 = num1 * 11 + num2 * 10 + num3 * 9 + num4 * 8 + num5 * 7 + num6 * 6 + num7 * 5 + num8 * 4 + num9 * 3 + num10 * 2;
-			var resto2 = (soma2 * 10) % 11;
-			if (resto2 == 10 || resto2 == 11) {
-				resto2 = 0;
-			}
-			if (num11 != resto2) {
-				return false;
-			}
-		}
+	]
+
+	var found = ListaCategorias.find(e => e.ID == ID);
+
+	if (found) {
+		return found.optFields;
 	}
-	return true;
+	else {
+		return [];
+	}
 }
 
-function BuscaProdutos(clg) {
-	//Joga os produtos na variavel Global Produtos
-	DatasetFactory.getDataset("consultaProdutoRM", null, [
-		DatasetFactory.createConstraint("clg", clg, clg, ConstraintType.MUST),
-		DatasetFactory.createConstraint("tp", 1, 1, ConstraintType.MUST)
-	], null, {
-		success: (produtos => {
-			for (const produto of produtos.values) {
-				Produtos.push({
-					value: produto.CODIGOPRD + " - " + produto.NOMEFANTASIA
-				});
-			}
-		}),
-		error: (error => {
-			FLUIGC.toast({
-				title: "Erro ao buscar Produtos: ",
-				message: error,
-				type: warning
-			});
-		})
+function CriaGrupoDivergencias(GRUPO, DESCRICAO) {
+	var ds = ExecutaDataset("DatasetDivergenciasContabilidade", null, [
+		DatasetFactory.createConstraint("Operacao", "InsertCategoriaDivergencia", "InsertCategoriaDivergencia", ConstraintType.MUST),
+		DatasetFactory.createConstraint("CategoriaDivergencia", JSON.stringify({ GRUPO: GRUPO, DESCRICAO: DESCRICAO }), JSON.stringify({ GRUPO: GRUPO, DESCRICAO: DESCRICAO }), ConstraintType.MUST),
+	], null)
+	console.log(ds)
+}
+
+function CriaDivergencia(Divergencia) {
+	return new Promise(async (resolve, reject) => {
+		try {
+			//Insere outras colunas que são padrão de todo Insert
+			Divergencia.CREATEDON = getDateNowSQL();
+			Divergencia.CREATEDBY = WCMAPI.userCode;
+			Divergencia.MODIFIEDON = getDateNowSQL();
+			Divergencia.MODIFIEDBY = WCMAPI.userCode;
+			Divergencia.EMAIL_PEND = 1;
+			Divergencia.MOTIVO_CANC = null;
+			Divergencia.STATUS = 1;
+
+			await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
+				DatasetFactory.createConstraint("Operacao", "InsertDivergencia", "InsertDivergencia", ConstraintType.MUST),
+				DatasetFactory.createConstraint("Divergencia", JSON.stringify(Divergencia), JSON.stringify(Divergencia), ConstraintType.MUST)
+			], null);
+
+			resolve();
+		} catch (error) {
+			reject();
+		}
 	});
-}
-
-function BuscaDepartamentos() {
-	//Joga os Departamentos na variavel Global Departamentos
-	DatasetFactory.getDataset("GDEPTO", null, [
-		DatasetFactory.createConstraint("CODCOLIGADA", 1, 1, ConstraintType.MUST),
-		DatasetFactory.createConstraint("CODFILIAL", 1, 1, ConstraintType.MUST),
-		DatasetFactory.createConstraint("ATIVO", "T", "T", ConstraintType.MUST)
-	], null, {
-		success: (ds => {
-			Departamentos = [];
-			for (const departamento of ds.values) {
-				Departamentos.push({
-					label: departamento.CODDEPARTAMENTO + " - " + departamento.NOME,
-					value: departamento.CODDEPARTAMENTO + " - " + departamento.NOME
-				});
-			}
-		})
-	});
-}
-
-function BuscaFiliais(CODCOLIGADA) {
-	//Joga as Filiais na variavel Global Filiais
-	DatasetFactory.getDataset("GFILIAL", null, [
-		DatasetFactory.createConstraint("CODCOLIGADA", CODCOLIGADA, CODCOLIGADA, ConstraintType.MUST)
-	], null, {
-		success: (ds => {
-			Filiais = [];
-			for (const filial of ds.values) {
-				Filiais.push({
-					CODFILIAL: filial.CODFILIAL,
-					FILIAL: filial.NOMEFANTASIA
-				});
-			}
-		})
-	});
-}
-
-function getDateNow() {
-	var date = new Date();
-
-	var day = date.getDate().toString().padStart(2, "0");
-	var month = (date.getMonth() + 1).toString().padStart(2, "0");
-	var year = date.getFullYear();
-
-	return day + "/" + month + "/" + year;
-}
-
-function getDateNowSQL() {
-	const date = new Date();
-	const year = date.getFullYear();
-	const month = (date.getMonth() + 1).toString().padStart(2, '0');
-	const day = date.getDate().toString().padStart(2, '0');
-
-	return `${year}-${month}-${day}`;
 }
 
 function NotificaDivergencias(Divergencias) {
@@ -418,6 +415,144 @@ function EnviaEmail(CorpoEmail, usuario) {
 		});
 }
 
+function AbreModalDetalhes(Divergencia, onCancelarDivergencia) {
+	//Abre a Modal
+	console.log(Divergencia);
+	myModal = FLUIGC.modal({
+		title: 'Divergência',
+		content: '<div id="rootModalDetalhes"></div>',
+		id: 'fluig-modal',
+		size: 'full',
+		actions: [
+			{
+				"label": "Cancelar",
+				"classType": "btn-danger",
+				"bind": "Cancelar-Divergencia"
+			}, {
+				'label': 'Fechar',
+				'autoClose': true
+			}
+		]
+	}, function (err, data) {
+		if (err) {
+		} else {
+			//Apos criar a Modal inicia o <ModalDetalhes/> dentro da Modal
+			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia, onCancelarDivergencia: onCancelarDivergencia }), document.querySelector("#rootModalDetalhes"));
+		}
+	});
+}
+
+
+
+// UTILS
+
+function makeid(length) {
+	var result = '';
+	var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	var charactersLength = characters.length;
+	for (var i = 0; i < length; i++) {
+		result += characters.charAt(Math.floor(Math.random() *
+			charactersLength));
+	}
+	return result;
+}
+
+function validarCNPJ(cnpj) {
+	cnpj = cnpj.replace(/[^\d]+/g, "");
+	if (cnpj == "") return false;
+
+	if (cnpj.length != 14) return false;
+
+	// Elimina CNPJs invalidos conhecidos
+	if (cnpj == "00000000000000" || cnpj == "11111111111111" || cnpj == "22222222222222" || cnpj == "33333333333333" || cnpj == "44444444444444" || cnpj == "55555555555555" || cnpj == "66666666666666" || cnpj == "77777777777777" || cnpj == "88888888888888" || cnpj == "99999999999999") return false;
+
+	// Valida DVs
+	tamanho = cnpj.length - 2;
+	numeros = cnpj.substring(0, tamanho);
+	digitos = cnpj.substring(tamanho);
+	soma = 0;
+	pos = tamanho - 7;
+	for (i = tamanho; i >= 1; i--) {
+		soma += numeros.charAt(tamanho - i) * pos--;
+		if (pos < 2) pos = 9;
+	}
+	resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+	if (resultado != digitos.charAt(0)) return false;
+
+	tamanho = tamanho + 1;
+	numeros = cnpj.substring(0, tamanho);
+	soma = 0;
+	pos = tamanho - 7;
+	for (i = tamanho; i >= 1; i--) {
+		soma += numeros.charAt(tamanho - i) * pos--;
+		if (pos < 2) pos = 9;
+	}
+	resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+	if (resultado != digitos.charAt(1)) return false;
+
+	return true;
+}
+
+function validaCPF(separacpf) {
+	// Verificado em 18/05/2017 conforme: http://www.receita.fazenda.gov.br/aplicacoes/atcta/cpf/funcoes.js
+	// 0: válido; 1: inválido
+	separacpf = separacpf.replace(/[^\d]+/g, "");
+
+	var retorno = 0;
+	var num1 = separacpf[0];
+	var num2 = separacpf[1];
+	var num3 = separacpf[2];
+	var num4 = separacpf[3];
+	var num5 = separacpf[4];
+	var num6 = separacpf[5];
+	var num7 = separacpf[6];
+	var num8 = separacpf[7];
+	var num9 = separacpf[8];
+	var num10 = separacpf[9];
+	var num11 = separacpf[10];
+	if (num1 == num2 && num2 == num3 && num3 == num4 && num4 == num5 && num5 == num6 && num6 == num7 && num7 == num8 && num8 == num9 && num9 == num10) {
+		return false;
+	} else {
+		var soma1 = num1 * 10 + num2 * 9 + num3 * 8 + num4 * 7 + num5 * 6 + num6 * 5 + num7 * 4 + num8 * 3 + num9 * 2;
+		var resto1 = (soma1 * 10) % 11;
+		if (resto1 == 10 || resto1 == 11) {
+			resto1 = 0;
+		}
+		if (num10 != resto1) {
+			return false;
+		} else {
+			var soma2 = num1 * 11 + num2 * 10 + num3 * 9 + num4 * 8 + num5 * 7 + num6 * 6 + num7 * 5 + num8 * 4 + num9 * 3 + num10 * 2;
+			var resto2 = (soma2 * 10) % 11;
+			if (resto2 == 10 || resto2 == 11) {
+				resto2 = 0;
+			}
+			if (num11 != resto2) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+function getDateNow() {
+	var date = new Date();
+
+	var day = date.getDate().toString().padStart(2, "0");
+	var month = (date.getMonth() + 1).toString().padStart(2, "0");
+	var year = date.getFullYear();
+
+	return day + "/" + month + "/" + year;
+}
+
+function getDateNowSQL() {
+	const date = new Date();
+	const year = date.getFullYear();
+	const month = (date.getMonth() + 1).toString().padStart(2, '0');
+	const day = date.getDate().toString().padStart(2, '0');
+
+	return `${year}-${month}-${day}`;
+}
+
 function ExecutaDataset(DatasetName, Fields, Constraints, Order) {
 	return new Promise((resolve, reject) => {
 		DatasetFactory.getDataset(DatasetName, Fields, Constraints, Order, {
@@ -450,116 +585,7 @@ function ExecutaDataset(DatasetName, Fields, Constraints, Order) {
 	});
 }
 
-function CriaGrupoDivergencias(GRUPO, DESCRICAO) {
-	var ds = ExecutaDataset("DatasetDivergenciasContabilidade", null, [
-		DatasetFactory.createConstraint("Operacao", "InsertCategoriaDivergencia", "InsertCategoriaDivergencia", ConstraintType.MUST),
-		DatasetFactory.createConstraint("CategoriaDivergencia", JSON.stringify({ GRUPO: GRUPO, DESCRICAO: DESCRICAO }), JSON.stringify({ GRUPO: GRUPO, DESCRICAO: DESCRICAO }), ConstraintType.MUST),
-	], null)
-	console.log(ds)
-}
 
-async function BuscaCategoriasDivergencia() {
-	var categorias = await ExecutaDataset("DatasetDivergenciasContabilidade", null, [DatasetFactory.createConstraint("Operacao", "BuscaCategoriaDivergencia", "BuscaCategoriaDivergencia", ConstraintType.MUST)], null);
-	var options = [];
 
-	for (const Categoria of categorias) {
-		options.push({ label: Categoria.DESCRICAO, value: Categoria.ID });
-	}
 
-	return options;
-}
 
-function BuscaCamposComplementaresCategoriaDivergencia(ID) {
-	var ListaCategorias = [
-		{
-			ID: 1,
-			optFields: [
-				{ label: "Produto Lançado: ", type: "Produto" },
-				{ label: "Produto Correto: ", type: "Produto" }
-			]
-		}
-	]
-
-	var found = ListaCategorias.find(e => e.ID == ID);
-
-	if (found) {
-		return found.optFields;
-	}
-	else {
-		return [];
-	}
-}
-
-function CriaDivergencia(Divergencia) {
-	return new Promise(async (resolve, reject) => {
-		try {
-			//Insere outras colunas que são padrão de todo Insert
-			Divergencia.CREATEDON = getDateNowSQL();
-			Divergencia.CREATEDBY = WCMAPI.userCode;
-			Divergencia.MODIFIEDON = getDateNowSQL();
-			Divergencia.MODIFIEDBY = WCMAPI.userCode;
-			Divergencia.EMAIL_PEND = 1;
-			Divergencia.MOTIVO_CANC = null;
-			Divergencia.STATUS = 1;
-
-			await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
-				DatasetFactory.createConstraint("Operacao", "InsertDivergencia", "InsertDivergencia", ConstraintType.MUST),
-				DatasetFactory.createConstraint("Divergencia", JSON.stringify(Divergencia), JSON.stringify(Divergencia), ConstraintType.MUST)
-			], null);
-
-			resolve();
-		} catch (error) {
-			reject();
-		}
-	});
-}
-
-function BuscaDivergencias() {
-	return new Promise(async (resolve, reject) => {
-		try {
-			var Divergencias = await BuscaListaDeDivergencias();
-			var Movimentos = await BuscaMovimentosDasDivergencias(Divergencias);
-			Divergencias = InsereNasDivergenciasAsInformacoesDoMovimento(Divergencias, Movimentos);
-			resolve(Divergencias);
-		} catch (error) {
-			console.error(error);
-			reject();
-		}
-	});
-
-	async function BuscaListaDeDivergencias() {
-		return await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
-			DatasetFactory.createConstraint("Operacao", "BuscaDivergencias", "BuscaDivergencias", ConstraintType.MUST)
-		], null);
-	}
-
-	async function BuscaMovimentosDasDivergencias(Divergencias) {
-		//Extrai CODCOLIGADA e IDMOV das Divergencias
-		var ListaDeCODCOLIGADAeIDMOV = Divergencias.map(({ CODCOLIGADA, IDMOV }) => ({ CODCOLIGADA, IDMOV }));
-		return await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
-			DatasetFactory.createConstraint("Operacao", "BuscaMovimentos", "BuscaMovimentos", ConstraintType.MUST),
-			DatasetFactory.createConstraint("Movimentos", JSON.stringify(ListaDeCODCOLIGADAeIDMOV), JSON.stringify(ListaDeCODCOLIGADAeIDMOV), ConstraintType.MUST)
-		], null);
-	}
-
-	function InsereNasDivergenciasAsInformacoesDoMovimento(Divergencias, Movimentos) {
-		return Divergencias.map(Divergencia => {
-			var Movimento = Movimentos.find(e => e.CODCOLIGADA == Divergencia.CODCOLIGADA && e.IDMOV == Divergencia.IDMOV);
-
-			Divergencia.OBS_DIVERG = JSON.parse(Divergencia.OBS_DIVERG)
-			const {COLIGADA, CODFILIAL, FILIAL, FORNECEDOR, CGCCFO, CODTMV, CODUSUARIO, DATAEMISSAO, VALORBRUTO } = Movimento;
-			return {
-				...Divergencia,
-				COLIGADA,
-				CODFILIAL,
-				FILIAL,
-				FORNECEDOR,
-				CGCCFO,
-				CODTMV,
-				CODUSUARIO,
-				DATAEMISSAO,
-				VALORBRUTO
-			}
-		});
-	}
-}
