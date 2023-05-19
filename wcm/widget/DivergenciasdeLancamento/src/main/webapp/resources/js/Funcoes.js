@@ -456,7 +456,6 @@ function CriaGrupoDivergencias(GRUPO, DESCRICAO) {
 		DatasetFactory.createConstraint("CategoriaDivergencia", JSON.stringify({ GRUPO: GRUPO, DESCRICAO: DESCRICAO }), JSON.stringify({ GRUPO: GRUPO, DESCRICAO: DESCRICAO }), ConstraintType.MUST),
 	], null)
 	console.log(ds)
-
 }
 
 async function BuscaCategoriasDivergencia() {

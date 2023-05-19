@@ -145,128 +145,6 @@ class AppRoot extends React.Component {
     }
 }
 
-function ListaDivergencias({ Divergencias, onCancelarDivergencia }) {
-    useEffect(() => {
-        //Ao Criar o componente Inicia a DataTables
-        DataTableDivergencias = $("#TableDivergencias").DataTable({
-            pageLength: 25,
-            columns: [
-                { data: "DATAEMISSAO" },
-                { data: "CODTMV" },
-                { data: "CODFILIAL" },
-                { data: "CREATEDON" },
-                {
-                    render: function (data, type, row) {
-                        return "<span>" + row.CGCCFO + " <br /> " + row.FORNECEDOR + "</span>";
-                    }
-                },
-                { data: "CODUSUARIO" },
-                {
-                    data: "CATEGORIA",
-                    render: function (data, type, row) {
-                        return data;
-                    }
-                },
-                {
-                    render: function (data, type, row) {
-                        if (row.STATUS == false) {
-                            return "<div style='text-align:center'><button class='btn btn-danger btnShowDetails bs-docs-popover-hover' data-toggle='popover' data-content='" + row.MOTIVO_CANC + "' >Detalhes</button></div>";
-                        } else {
-                            return "<div style='text-align:center'><button class='btn btn-primary btnShowDetails'>Detalhes</button></div>";
-                        }
-                    }
-                }
-            ],
-            language: {
-                sEmptyTable: "Nenhum registro encontrado",
-                sInfo: "Mostrando de _START_ até _END_ de _TOTAL_ registros",
-                sInfoEmpty: "Mostrando 0 até 0 de 0 registros",
-                sInfoFiltered: "(Filtrados de _MAX_ registros)",
-                sInfoPostFix: "",
-                sInfoThousands: ".",
-                sLengthMenu: "_MENU_ resultados por página",
-                sLoadingRecords: "Carregando...",
-                sProcessing: "Processando...",
-                sZeroRecords: "Nenhum registro encontrado",
-                sSearch: "Pesquisar",
-                oPaginate: {
-                    sNext: "Próximo",
-                    sPrevious: "Anterior",
-                    sFirst: "Primeiro",
-                    sLast: "Último"
-                },
-                oAria: {
-                    sSortAscending: ": Ordenar colunas de forma ascendente",
-                    sSortDescending: ": Ordenar colunas de forma descendente"
-                },
-                select: {
-                    rows: {
-                        _: "Selecionado %d linhas",
-                        0: "Nenhuma linha selecionada",
-                        1: "Selecionado 1 linha"
-                    }
-                },
-                buttons: {
-                    copy: "Copiar para a área de transferência",
-                    copyTitle: "Cópia bem sucedida",
-                    copySuccess: {
-                        1: "Uma linha copiada com sucesso",
-                        _: "%d linhas copiadas com sucesso"
-                    }
-                }
-            }
-        });
-    }, []);
-
-    useEffect(() => {
-        //Toda vez que o componente foi atualizado passa as Divergencias para a DataTables
-        DataTableDivergencias.clear();
-        DataTableDivergencias.rows.add(Divergencias);
-        setTimeout(() => {
-            DataTableDivergencias.columns.adjust().draw();
-        }, 200);
-
-        //Toda vez que o componente for atualizado Cria a trigger on("draw") na DataTables
-        DataTableDivergencias.on("draw", { onCancelarDivergencia: onCancelarDivergencia }, (event) => {
-            //Importante notar que e passado o parametro onCancelarDivergencia no event
-            //Esse parametro vai ser repassado para a funcao AbreModalDetalhes()
-            //Por sua vez a funcao AbreModalDetalhes() repassar o onCancelarDivergencia para a Modal que será criada
-            //Assim a Modal criada conseguira chamar o onCancelarDivergencia caso o usuario clique no Botao Cancelar
-
-            FLUIGC.popover(".bs-docs-popover-hover", { trigger: "hover", placement: "auto" });
-            $(".btnShowDetails").off("click");
-            $(".btnShowDetails").on("click", { onCancelarDivergencia: event.data.onCancelarDivergencia }, function (event) {
-                //Cria a trigger no botão Detalhes que ao ser clicado abre a Modal Detalhes
-                var tr = $(this).closest("tr");
-                var row = DataTableDivergencias.row(tr);
-                var values = row.data();
-                //Passa as informacoes da Divergencia e o handler de cancelar divergencia para a funcao que inicia a Modal Detalhes
-                AbreModalDetalhes(values, event.data.onCancelarDivergencia);
-            });
-        });
-    }, [Divergencias]);
-
-    return (
-        <Panel Title="Divergências/Correções">
-            <table className="table table-bordered table-striped" id="TableDivergencias" style={{ width: "100%" }}>
-                <thead>
-                    <tr>
-                        <th>Emissão</th>
-                        <th>T.M.</th>
-                        <th>Filial</th>
-                        <th>Criação</th>
-                        <th>Fornecedor</th>
-                        <th>Usuário</th>
-                        <th>Correção</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </Panel>
-    );
-}
-
 class Lancamento extends React.Component {
     constructor(props) {
         super(props);
@@ -723,6 +601,202 @@ function LancamentoDivergencia({ CategoriaDivergencia, onChangeCategoriaDivergen
     );
 }
 
+function ListaDivergencias({ Divergencias, onCancelarDivergencia }) {
+    useEffect(() => {
+        //Ao Criar o componente Inicia a DataTables
+        DataTableDivergencias = $("#TableDivergencias").DataTable({
+            pageLength: 25,
+            columns: [
+                {
+                    data: "DATAEMISSAO",
+                    render: function (data, type, row) {
+                        return data.split(" ")[0].split("-").reverse().join("/");
+                    }
+                },
+                { data: "CODTMV" },
+                { data: "CODFILIAL" },
+                {
+                    data: "CREATEDON",
+                    render: function (data, type, row) {
+                        return data.split("-").reverse().join("/");
+                    }
+                },
+                {
+                    render: function (data, type, row) {
+                        return "<span>" + row.CGCCFO + " <br /> " + row.FORNECEDOR + "</span>";
+                    }
+                },
+                { data: "CODUSUARIO" },
+                {
+                    data: "CATEGORIA",
+                    render: function (data, type, row) {
+                        return data;
+                    }
+                },
+                {
+                    render: function (data, type, row) {
+                        if (row.STATUS == false) {
+                            return "<div style='text-align:center'><button class='btn btn-danger btnShowDetails bs-docs-popover-hover' data-toggle='popover' data-content='" + row.MOTIVO_CANC + "' >Detalhes</button></div>";
+                        } else {
+                            return "<div style='text-align:center'><button class='btn btn-primary btnShowDetails'>Detalhes</button></div>";
+                        }
+                    }
+                }
+            ],
+            language: {
+                sEmptyTable: "Nenhum registro encontrado",
+                sInfo: "Mostrando de _START_ até _END_ de _TOTAL_ registros",
+                sInfoEmpty: "Mostrando 0 até 0 de 0 registros",
+                sInfoFiltered: "(Filtrados de _MAX_ registros)",
+                sInfoPostFix: "",
+                sInfoThousands: ".",
+                sLengthMenu: "_MENU_ resultados por página",
+                sLoadingRecords: "Carregando...",
+                sProcessing: "Processando...",
+                sZeroRecords: "Nenhum registro encontrado",
+                sSearch: "Pesquisar",
+                oPaginate: {
+                    sNext: "Próximo",
+                    sPrevious: "Anterior",
+                    sFirst: "Primeiro",
+                    sLast: "Último"
+                },
+                oAria: {
+                    sSortAscending: ": Ordenar colunas de forma ascendente",
+                    sSortDescending: ": Ordenar colunas de forma descendente"
+                },
+                select: {
+                    rows: {
+                        _: "Selecionado %d linhas",
+                        0: "Nenhuma linha selecionada",
+                        1: "Selecionado 1 linha"
+                    }
+                },
+                buttons: {
+                    copy: "Copiar para a área de transferência",
+                    copyTitle: "Cópia bem sucedida",
+                    copySuccess: {
+                        1: "Uma linha copiada com sucesso",
+                        _: "%d linhas copiadas com sucesso"
+                    }
+                }
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        //Toda vez que o componente foi atualizado passa as Divergencias para a DataTables
+        DataTableDivergencias.clear();
+        DataTableDivergencias.rows.add(Divergencias);
+        setTimeout(() => {
+            DataTableDivergencias.columns.adjust().draw();
+        }, 200);
+
+        //Toda vez que o componente for atualizado Cria a trigger on("draw") na DataTables
+        DataTableDivergencias.on("draw", { onCancelarDivergencia: onCancelarDivergencia }, (event) => {
+            //Importante notar que e passado o parametro onCancelarDivergencia no event
+            //Esse parametro vai ser repassado para a funcao AbreModalDetalhes()
+            //Por sua vez a funcao AbreModalDetalhes() repassar o onCancelarDivergencia para a Modal que será criada
+            //Assim a Modal criada conseguira chamar o onCancelarDivergencia caso o usuario clique no Botao Cancelar
+
+            FLUIGC.popover(".bs-docs-popover-hover", { trigger: "hover", placement: "auto" });
+            $(".btnShowDetails").off("click");
+            $(".btnShowDetails").on("click", { onCancelarDivergencia: event.data.onCancelarDivergencia }, function (event) {
+                //Cria a trigger no botão Detalhes que ao ser clicado abre a Modal Detalhes
+                var tr = $(this).closest("tr");
+                var row = DataTableDivergencias.row(tr);
+                var values = row.data();
+                //Passa as informacoes da Divergencia e o handler de cancelar divergencia para a funcao que inicia a Modal Detalhes
+                AbreModalDetalhes(values, event.data.onCancelarDivergencia);
+            });
+        });
+    }, [Divergencias]);
+
+    return (
+        <Panel Title="Divergências/Correções">
+            <table className="table table-bordered table-striped" id="TableDivergencias" style={{ width: "100%" }}>
+                <thead>
+                    <tr>
+                        <th>Emissão</th>
+                        <th>T.M.</th>
+                        <th>Filial</th>
+                        <th>Criação</th>
+                        <th>Fornecedor</th>
+                        <th>Usuário</th>
+                        <th>Correção</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </Panel>
+    );
+}
+
+function FiltroListaDivergencias(FiltroObra, FiltroUsuario, FiltroTipoDeMovimento, FiltroPeriodoInicio, FiltroPeriodoFim, FiltroStatus, onChangeFiltro, onBuscarDivergencias) {
+    const [OptionsObras, setOptionsObras] = useState([]);
+    const [OptionsUsuarios, setOptionsUsuarios] = useState([]);
+
+    useEffect(() => {
+        //   BuscaObras();
+        //   BuscaUsuarios();
+    }, []);
+
+    async function BuscaObras() {
+        var usuarios = await ExecutaDataset("DatasetDivergenciasContabilidade", null, [], null);
+        setOptionsObras(usuarios);
+    }
+
+    async function BuscaUsuarios() {
+        var usuarios = await ExecutaDataset("DatasetDivergenciasContabilidade", null, [], null);
+        setOptionsUsuarios(usuarios);
+    }
+
+    return (
+        <div>
+            <div className="row">
+                <div className="col-md-4">
+                    <b>Obra:</b>
+                    <select className="form-control" value={FiltroObra} onChange={(e) => onChangeFiltro("FiltroObra", e.target.value)}></select>
+                </div>
+                <div className="col-md-4">
+                    <b>Usuário:</b>
+                    <select className="form-control" value={FiltroUsuario} onChange={(e) => onChangeFiltro("FiltroUsuario", e.target.value)}></select>
+                </div>
+                <div className="col-md-4">
+                    <b>Tipo de Movimento:</b>
+                    <select className="form-control" value={FiltroTipoDeMovimento} onChange={(e) => onChangeFiltro("FiltroTipoDeMovimento", e.target.value)}>
+                        <option value="Todos">Todos</option>
+                        <option value="1.2.0x">1.2.0x</option>
+                        <option value="1.2.0x">1.2.0x</option>
+                        <option value="1.2.0x">1.2.0x</option>
+                        <option value="1.2.0x">1.2.0x</option>
+                    </select>
+                </div>
+            </div>
+            <br />
+            <div className="row">
+                <div className="col-md-4">
+                    <b>Periodo Inicio:</b>
+                    <DateInput onChange={(e) => this.onChangeFiltro("FiltroPeriodoInicio", e)} value={FiltroPeriodoInicio} />
+                </div>
+                <div className="col-md-4">
+                    <b>Periodo Final:</b>
+                    <DateInput onChange={(e) => this.onChangeFiltro("FiltroPeriodoFim", e)} value={FiltroPeriodoFim} />
+                </div>
+                <div className="col-md-4">
+                    <b>Status:</b>
+                    <select className="form-control" value={FiltroStatus} onChange={(e) => onChangeFiltro("FiltroStatus", e.target.value)}>
+                        <option value="Ativo">Ativo</option>
+                        <option value="Cancelado">Cancelado</option>
+                        <option value="Todos">Todos</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 class ModalDetalhes extends React.Component {
     constructor(props) {
         super(props);
@@ -738,7 +812,7 @@ class ModalDetalhes extends React.Component {
     }
 
     BuscaMovimento(CODCOLIGADA, IDMOV) {
-        BuscaItensMovimentoRM(CODCOLIGADA, IDMOV).then(itensRM=>{
+        BuscaItensMovimentoRM(CODCOLIGADA, IDMOV).then(itensRM => {
             var itens = [];
             for (const item of itensRM) {
                 itens.push({
@@ -755,56 +829,84 @@ class ModalDetalhes extends React.Component {
                     Itens: itens
                 }
             );
-        }).catch(()=>{
+        }).catch(() => {
             this.setState({
                 Itens: []
             });
         });
 
 
-/*
-        Promise.all([BuscaMovimentoRM(CODCOLIGADA, IDMOV), BuscaItensMovimentoRM(CODCOLIGADA, IDMOV)])
-            .then((retorno) => {
-                var movimentoRM = retorno[0];
-                var DATASAIDA = movimentoRM.DATASAIDA;
-                DATASAIDA = DATASAIDA.split(" ")[0].split("-").reverse().join("/");
-                var DATAEMISSAO = movimentoRM.DATAEMISSAO;
-                DATAEMISSAO = DATAEMISSAO.split(" ")[0].split("-").reverse().join("/");
-
-                var movimento = {
-                    ID: this.props.Divergencia.ID,
-                    Coligada: this.props.Divergencia.Coligada,
-                    IDMOV: this.props.Divergencia.Identificador,
-                    Filial: movimentoRM.CODFILIAL,
-                    Fornecedor: movimentoRM.FORNECEDOR,
-                    CGCCFO: movimentoRM.CGCCFO,
-                    CODTMV: movimentoRM.CODTMV,
-                    ValorTotal: movimentoRM.VALORBRUTO,
-                    DataEmissao: DATAEMISSAO,
-                    DataCriacao: DATASAIDA,
-                    NumeroMov: movimentoRM.NUMEROMOV,
-                    Serie: movimentoRM.SERIE,
-                    Usuario: movimentoRM.USUARIOCRIACAO
-                };
-
-                var itensRM = retorno[1];
-                var itens = [];
-                for (const item of itensRM) {
-                    itens.push({
-                        Produto: item.PRODUTO,
-                        CodigoProduto: item.CODIGOPRODUTO,
-                        Quantidade: item.QUANTIDADE,
-                        CODUND: item.CODUND,
-                        ValorUnit: item.VALORUNITARIO
-                    });
-                }
-
-                this.setState(
-                    {
-                        Movimento: movimento,
-                        Itens: itens
-                    },
-                    () => {
+        /*
+                Promise.all([BuscaMovimentoRM(CODCOLIGADA, IDMOV), BuscaItensMovimentoRM(CODCOLIGADA, IDMOV)])
+                    .then((retorno) => {
+                        var movimentoRM = retorno[0];
+                        var DATASAIDA = movimentoRM.DATASAIDA;
+                        DATASAIDA = DATASAIDA.split(" ")[0].split("-").reverse().join("/");
+                        var DATAEMISSAO = movimentoRM.DATAEMISSAO;
+                        DATAEMISSAO = DATAEMISSAO.split(" ")[0].split("-").reverse().join("/");
+        
+                        var movimento = {
+                            ID: this.props.Divergencia.ID,
+                            Coligada: this.props.Divergencia.Coligada,
+                            IDMOV: this.props.Divergencia.Identificador,
+                            Filial: movimentoRM.CODFILIAL,
+                            Fornecedor: movimentoRM.FORNECEDOR,
+                            CGCCFO: movimentoRM.CGCCFO,
+                            CODTMV: movimentoRM.CODTMV,
+                            ValorTotal: movimentoRM.VALORBRUTO,
+                            DataEmissao: DATAEMISSAO,
+                            DataCriacao: DATASAIDA,
+                            NumeroMov: movimentoRM.NUMEROMOV,
+                            Serie: movimentoRM.SERIE,
+                            Usuario: movimentoRM.USUARIOCRIACAO
+                        };
+        
+                        var itensRM = retorno[1];
+                        var itens = [];
+                        for (const item of itensRM) {
+                            itens.push({
+                                Produto: item.PRODUTO,
+                                CodigoProduto: item.CODIGOPRODUTO,
+                                Quantidade: item.QUANTIDADE,
+                                CODUND: item.CODUND,
+                                ValorUnit: item.VALORUNITARIO
+                            });
+                        }
+        
+                        this.setState(
+                            {
+                                Movimento: movimento,
+                                Itens: itens
+                            },
+                            () => {
+                                FLUIGC.toast({
+                                    title: "Erro ao Buscar Movimento!",
+                                    message: "",
+                                    type: "warning"
+                                });
+                                console.log(e);
+                
+                                var movimento = {
+                                    Coligada: "",
+                                    IDMOV: "",
+                                    Filial: "",
+                                    Fornecedor: "",
+                                    CGCCFO: "",
+                                    CODTMV: "",
+                                    ValorTotal: "",
+                                    DataEmissao: "",
+                                    DataCriacao: "",
+                                    NumeroMov: "",
+                                    Serie: "",
+                                    Usuario: ""
+                                };
+                
+                                var itens = [];
+                            }
+                        );
+                        //this.props.onBuscaMovimento(movimento, itens);
+                    })
+                    .catch((e) => {
                         FLUIGC.toast({
                             title: "Erro ao Buscar Movimento!",
                             message: "",
@@ -828,41 +930,13 @@ class ModalDetalhes extends React.Component {
                         };
         
                         var itens = [];
-                    }
-                );
-                //this.props.onBuscaMovimento(movimento, itens);
-            })
-            .catch((e) => {
-                FLUIGC.toast({
-                    title: "Erro ao Buscar Movimento!",
-                    message: "",
-                    type: "warning"
-                });
-                console.log(e);
-
-                var movimento = {
-                    Coligada: "",
-                    IDMOV: "",
-                    Filial: "",
-                    Fornecedor: "",
-                    CGCCFO: "",
-                    CODTMV: "",
-                    ValorTotal: "",
-                    DataEmissao: "",
-                    DataCriacao: "",
-                    NumeroMov: "",
-                    Serie: "",
-                    Usuario: ""
-                };
-
-                var itens = [];
-
-                this.setState({
-                    Movimento: movimento,
-                    Itens: itens
-                });
-                //this.props.onBuscaMovimento(movimento, itens);
-            });*/
+        
+                        this.setState({
+                            Movimento: movimento,
+                            Itens: itens
+                        });
+                        //this.props.onBuscaMovimento(movimento, itens);
+                    });*/
     }
 
     renderItens() {
@@ -946,7 +1020,7 @@ class ModalDetalhes extends React.Component {
     }
 
     render() {
-           return (
+        return (
             <div>
                 <Panel Title="Lançamento">
                     <div className="row">
@@ -1053,70 +1127,6 @@ class ModalDetalhes extends React.Component {
     }
 }
 
-function FiltroListaDivergencias(FiltroObra, FiltroUsuario, FiltroTipoDeMovimento, FiltroPeriodoInicio, FiltroPeriodoFim, FiltroStatus, onChangeFiltro, onBuscarDivergencias) {
-    const [OptionsObras, setOptionsObras] = useState([]);
-    const [OptionsUsuarios, setOptionsUsuarios] = useState([]);
-
-    useEffect(() => {
-        //   BuscaObras();
-        //   BuscaUsuarios();
-    }, []);
-
-    async function BuscaObras() {
-        var usuarios = await ExecutaDataset("DatasetDivergenciasContabilidade", null, [], null);
-        setOptionsObras(usuarios);
-    }
-
-    async function BuscaUsuarios() {
-        var usuarios = await ExecutaDataset("DatasetDivergenciasContabilidade", null, [], null);
-        setOptionsUsuarios(usuarios);
-    }
-
-    return (
-        <div>
-            <div className="row">
-                <div className="col-md-4">
-                    <b>Obra:</b>
-                    <select className="form-control" value={FiltroObra} onChange={(e) => onChangeFiltro("FiltroObra", e.target.value)}></select>
-                </div>
-                <div className="col-md-4">
-                    <b>Usuário:</b>
-                    <select className="form-control" value={FiltroUsuario} onChange={(e) => onChangeFiltro("FiltroUsuario", e.target.value)}></select>
-                </div>
-                <div className="col-md-4">
-                    <b>Tipo de Movimento:</b>
-                    <select className="form-control" value={FiltroTipoDeMovimento} onChange={(e) => onChangeFiltro("FiltroTipoDeMovimento", e.target.value)}>
-                        <option value="Todos">Todos</option>
-                        <option value="1.2.0x">1.2.0x</option>
-                        <option value="1.2.0x">1.2.0x</option>
-                        <option value="1.2.0x">1.2.0x</option>
-                        <option value="1.2.0x">1.2.0x</option>
-                    </select>
-                </div>
-            </div>
-            <br />
-            <div className="row">
-                <div className="col-md-4">
-                    <b>Periodo Inicio:</b>
-                    <DateInput onChange={(e) => this.onChangeFiltro("FiltroPeriodoInicio", e)} value={FiltroPeriodoInicio} />
-                </div>
-                <div className="col-md-4">
-                    <b>Periodo Final:</b>
-                    <DateInput onChange={(e) => this.onChangeFiltro("FiltroPeriodoFim", e)} value={FiltroPeriodoFim} />
-                </div>
-                <div className="col-md-4">
-                    <b>Status:</b>
-                    <select className="form-control" value={FiltroStatus} onChange={(e) => onChangeFiltro("FiltroStatus", e.target.value)}>
-                        <option value="Ativo">Ativo</option>
-                        <option value="Cancelado">Cancelado</option>
-                        <option value="Todos">Todos</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 function Item({ ItemIndex, CodigoProduto, Produto, Quantidade, ValorUnit, CODUND }) {
     return (
         <tr>
@@ -1173,6 +1183,40 @@ function Panel({ children, Title, HideAble }) {
             <div className="panel-body">{children}</div>
         </div>
     )
+}
+
+function DashboardDivergencias() {
+    useEffect(() => {
+        var chart = FLUIGC.chart("#pieChart", {
+            id: "set_an_id_for_my_chart",
+            width: "700",
+            height: "200"
+            /* See the list of options */
+        });
+
+        var pieChart = chart.pie([
+            {
+                value: 300,
+                color: "#F7464A",
+                highlight: "#FF5A5E",
+                label: "Red"
+            },
+            {
+                value: 50,
+                color: "#46BFBD",
+                highlight: "#5AD3D1",
+                label: "Green"
+            },
+            {
+                value: 100,
+                color: "#FDB45C",
+                highlight: "#FFC870",
+                label: "Yellow"
+            }
+        ]);
+    }, []);
+
+    return <div id="pieChart"></div>;
 }
 
 class CNPJInput extends React.Component {
@@ -1380,40 +1424,6 @@ class MoneySpan extends React.Component {
             return "-";
         }
     }
-}
-
-function DashboardDivergencias() {
-    useEffect(() => {
-        var chart = FLUIGC.chart("#pieChart", {
-            id: "set_an_id_for_my_chart",
-            width: "700",
-            height: "200"
-            /* See the list of options */
-        });
-
-        var pieChart = chart.pie([
-            {
-                value: 300,
-                color: "#F7464A",
-                highlight: "#FF5A5E",
-                label: "Red"
-            },
-            {
-                value: 50,
-                color: "#46BFBD",
-                highlight: "#5AD3D1",
-                label: "Green"
-            },
-            {
-                value: 100,
-                color: "#FDB45C",
-                highlight: "#FFC870",
-                label: "Yellow"
-            }
-        ]);
-    }, []);
-
-    return <div id="pieChart"></div>;
 }
 
 class ErrorBoundary extends React.Component {
