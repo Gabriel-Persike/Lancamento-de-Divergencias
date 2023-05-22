@@ -1,6 +1,7 @@
 const useEffect = React.useEffect;
 const useState = React.useState;
 const Select = antd.Select;
+const DatePicker = antd.DatePicker;
 
 class AppRoot extends React.Component {
     constructor(props) {
@@ -10,28 +11,39 @@ class AppRoot extends React.Component {
             Divergencias: [],
             DivergenciasCanceladas: [],
             MostraDivergenciasAtivas: true,
-            FiltroObra: "",
-            FiltroUsuario: "",
+            FiltroObra: "Todos",
+            FiltroUsuario: "Todos",
             FiltroTipoDeMovimento: "Todos",
-            FiltroPeriodoInicio: "",
-            FiltroPeriodoFim: "",
+            FiltroPeriodoInicio: moment().subtract(1, "month").format("YYYY-MM-DD"),
+            FiltroPeriodoFim: moment().format("YYYY-MM-DD"),
             FiltroStatus: "Ativo"
         };
     }
 
     async handleBuscaDivergencias() {
-        var Divergencias = await BuscaDivergencias();
-        this.setState({
-            Divergencias: Divergencias
-        }, () => {
+        var filtros = {
+            Obra: this.state.FiltroObra,
+            Usuario: this.state.FiltroUsuario,
+            TipoDeMovimento: this.state.FiltroTipoDeMovimento,
+            PeriodoInicio: this.state.FiltroPeriodoInicio,
+            PeriodoFim: this.state.FiltroPeriodoFim,
+            Status: this.state.FiltroStatus
+        };
 
-            FLUIGC.toast({
-                title: "Diverngias encontradas",
-                message: "",
-                type: "success",
-            })
-            console.log(this.state.Divergencias)
-        });
+        var Divergencias = await BuscaDivergencias(filtros);
+        this.setState(
+            {
+                Divergencias: Divergencias
+            },
+            () => {
+                FLUIGC.toast({
+                    title: "Diverngias encontradas",
+                    message: "",
+                    type: "success"
+                });
+                console.log(this.state.Divergencias);
+            }
+        );
     }
 
     handleCancelarDivergencia(id, Motivo) {
@@ -99,29 +111,9 @@ class AppRoot extends React.Component {
                         </div>
                         <div className="tab-pane" id="tabListaDivergencias">
                             <Panel Title="Filtro" HideAble={true}>
-                                <FiltroListaDivergencias FiltroObra={this.props.FiltroObra} FiltroUsuario={this.props.FiltroUsuario} FiltroTipoDeMovimento={this.props.FiltroTipoDeMovimento} FiltroPeriodoInici={this.props.FiltroPeriodoInici} FiltroPeriodoFim={this.props.FiltroPeriodoFim} FiltroStatus={this.props.FiltroStatus} onChangeFiltro={(target, value) => this.handleChangeFiltro(target, value)} />
-
-                                <div>
-                                    Placeholder
-                                    <br />
-                                    <br />
-                                    <button
-                                        className="btn btn-primary"
-                                        onClick={() => {
-                                            this.setState({ MostraDivergenciasAtivas: !this.state.MostraDivergenciasAtivas });
-                                        }}
-                                        style={{ marginRight: "20px" }}
-                                    >
-                                        ChangeView
-                                    </button>
-                                    <button
-                                        className="btn btn-primary"
-                                        onClick={() => {
-                                            NotificaDivergencias(this.state.Divergencias);
-                                        }}
-                                    >
-                                        Notificar Divergências
-                                    </button>
+                                <FiltroListaDivergencias FiltroObra={this.state.FiltroObra} FiltroUsuario={this.state.FiltroUsuario} FiltroTipoDeMovimento={this.state.FiltroTipoDeMovimento} FiltroPeriodoInicio={this.state.FiltroPeriodoInicio} FiltroPeriodoFim={this.state.FiltroPeriodoFim} FiltroStatus={this.state.FiltroStatus} onChangeFiltro={(target, value) => this.handleChangeFiltro(target, value)} />
+                                <br />
+                                <div style={{ textAlign: "right" }}>
                                     <button
                                         className="btn btn-success"
                                         onClick={() => {
@@ -130,7 +122,6 @@ class AppRoot extends React.Component {
                                     >
                                         Buscar
                                     </button>
-
                                 </div>
                             </Panel>
 
@@ -734,7 +725,7 @@ function ListaDivergencias({ Divergencias, onCancelarDivergencia }) {
     );
 }
 
-function FiltroListaDivergencias({FiltroObra, FiltroUsuario, FiltroTipoDeMovimento, FiltroPeriodoInicio, FiltroPeriodoFim, FiltroStatus, onChangeFiltro, onBuscarDivergencias}) {
+function FiltroListaDivergencias({ FiltroObra, FiltroUsuario, FiltroTipoDeMovimento, FiltroPeriodoInicio, FiltroPeriodoFim, FiltroStatus, onChangeFiltro, onBuscarDivergencias }) {
     const [OptionsObras, setOptionsObras] = useState([]);
     const [OptionsUsuarios, setOptionsUsuarios] = useState([]);
 
@@ -745,13 +736,19 @@ function FiltroListaDivergencias({FiltroObra, FiltroUsuario, FiltroTipoDeMovimen
 
     async function CriaListaNoFiltroPorObra() {
         var obras = await BuscaObras();
-        obras = obras.map(e => { return { label: e.CODCCUSTO + " - " + e.perfil, value: e.CODCCUSTO } });
+        obras = obras.map((e) => {
+            return { label: e.CODCCUSTO + " - " + e.perfil, value: e.perfil };
+        });
+        obras.push({ label: "Todos", value: "Todos" });
         setOptionsObras(obras);
     }
 
     async function CriaListaNoFiltroPorUsuario() {
         var usuarios = await ExecutaDataset("colleague", ["colleagueId"], [], null);
-        usuarios = usuarios.map(e => { return { label: e.colleagueId, value: e.colleagueId } });
+        usuarios = usuarios.map((e) => {
+            return { label: e.colleagueId, value: e.colleagueId };
+        });
+        usuarios.push({ label: "Todos", value: "Todos" });
         setOptionsUsuarios(usuarios);
     }
 
@@ -760,25 +757,20 @@ function FiltroListaDivergencias({FiltroObra, FiltroUsuario, FiltroTipoDeMovimen
             <div className="row">
                 <div className="col-md-4">
                     <b>Obra:</b>
-                    <Select style={{ width: "100%" }} showSearch filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
-                        options={OptionsObras}
-                        value={FiltroObra} onChange={(e) => onChangeFiltro("FiltroObra", e)}
-                    />
+                    <Select style={{ width: "100%" }} showSearch filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())} options={OptionsObras} value={FiltroObra} onChange={(e) => onChangeFiltro("FiltroObra", e)} />
                 </div>
                 <div className="col-md-4">
                     <b>Usuário:</b>
-                    <Select style={{ width: "100%" }} showSearch filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
-                        options={OptionsUsuarios}
-                        value={FiltroUsuario} onChange={(e) => onChangeFiltro("FiltroUsuario", e)} />
+                    <Select style={{ width: "100%" }} showSearch filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())} options={OptionsUsuarios} value={FiltroUsuario} onChange={(e) => onChangeFiltro("FiltroUsuario", e)} />
                 </div>
                 <div className="col-md-4">
                     <b>Tipo de Movimento:</b>
                     <select className="form-control" value={FiltroTipoDeMovimento} onChange={(e) => onChangeFiltro("FiltroTipoDeMovimento", e.target.value)}>
                         <option value="Todos">Todos</option>
-                        <option value="1.2.0x">1.2.0x</option>
-                        <option value="1.2.0x">1.2.0x</option>
-                        <option value="1.2.0x">1.2.0x</option>
-                        <option value="1.2.0x">1.2.0x</option>
+                        <option value="1.2.01">1.2.01</option>
+                        <option value="1.2.05">1.2.05</option>
+                        <option value="1.2.06">1.2.06</option>
+                        <option value="1.2.10">1.2.10</option>
                     </select>
                 </div>
             </div>
@@ -786,11 +778,20 @@ function FiltroListaDivergencias({FiltroObra, FiltroUsuario, FiltroTipoDeMovimen
             <div className="row">
                 <div className="col-md-4">
                     <b>Periodo Inicio:</b>
-                    <DateInput onChange={(e) => this.onChangeFiltro("FiltroPeriodoInicio", e)} value={FiltroPeriodoInicio} />
+                    <br />
+                    <DatePicker
+                        format={"DD/MM/YYYY"}
+                        onChange={(e) => {
+                            console.log(e);
+                            onChangeFiltro("FiltroPeriodoInicio", e);
+                        }}
+                        value={moment(FiltroPeriodoInicio)}
+                    />
                 </div>
                 <div className="col-md-4">
                     <b>Periodo Final:</b>
-                    <DateInput onChange={(e) => this.onChangeFiltro("FiltroPeriodoFim", e)} value={FiltroPeriodoFim} />
+                    <br />
+                    <DatePicker format={"DD/MM/YYYY"} onChange={(e) => onChangeFiltro("FiltroPeriodoFim", e)} value={moment(FiltroPeriodoFim)} />
                 </div>
                 <div className="col-md-4">
                     <b>Status:</b>
@@ -820,29 +821,28 @@ class ModalDetalhes extends React.Component {
     }
 
     BuscaMovimento(CODCOLIGADA, IDMOV) {
-        BuscaItensMovimentoRM(CODCOLIGADA, IDMOV).then(itensRM => {
-            var itens = [];
-            for (const item of itensRM) {
-                itens.push({
-                    Produto: item.PRODUTO,
-                    CodigoProduto: item.CODIGOPRODUTO,
-                    Quantidade: item.QUANTIDADE,
-                    CODUND: item.CODUND,
-                    ValorUnit: item.VALORUNITARIO
-                });
-            }
-
-            this.setState(
-                {
-                    Itens: itens
+        BuscaItensMovimentoRM(CODCOLIGADA, IDMOV)
+            .then((itensRM) => {
+                var itens = [];
+                for (const item of itensRM) {
+                    itens.push({
+                        Produto: item.PRODUTO,
+                        CodigoProduto: item.CODIGOPRODUTO,
+                        Quantidade: item.QUANTIDADE,
+                        CODUND: item.CODUND,
+                        ValorUnit: item.VALORUNITARIO
+                    });
                 }
-            );
-        }).catch(() => {
-            this.setState({
-                Itens: []
-            });
-        });
 
+                this.setState({
+                    Itens: itens
+                });
+            })
+            .catch(() => {
+                this.setState({
+                    Itens: []
+                });
+            });
 
         /*
                 Promise.all([BuscaMovimentoRM(CODCOLIGADA, IDMOV), BuscaItensMovimentoRM(CODCOLIGADA, IDMOV)])
@@ -1190,7 +1190,7 @@ function Panel({ children, Title, HideAble }) {
             </div>
             <div className="panel-body">{children}</div>
         </div>
-    )
+    );
 }
 
 function DashboardDivergencias() {
@@ -1328,93 +1328,6 @@ class FilialInput extends React.Component {
                 />
             </div>
         );
-    }
-}
-
-class DateInput extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            value: this.formatDateString(this.props.value) || ""
-        };
-    }
-
-    handleChange = (event) => {
-        const inputValue = event.target.value.replace(/[^\d]/g, "");
-        const day = inputValue.slice(0, 2);
-        const month = inputValue.slice(2, 4);
-        const year = inputValue.slice(4, 8);
-
-        let formattedValue = "";
-
-        if (day) {
-            formattedValue += day;
-            if (day.length === 2 && month) {
-                formattedValue += "/" + month;
-                if (month.length === 2 && year) {
-                    formattedValue += "/" + year;
-                }
-            }
-        }
-
-        this.setState({ value: formattedValue });
-
-        // Check if the input string is a valid date
-        if (this.isValidDateString(formattedValue)) {
-            this.props.onChange(formattedValue); // Signal that the input is valid
-        } else {
-            this.props.onChange(null); // Signal that the input is invalid
-        }
-    };
-
-    handleBlur = () => {
-        const inputDateString = this.state.value.replace(/[^\d]/g, "");
-        if (!this.isValidDateString(this.state.value) && inputDateString.length > 0) {
-            // If the input value is incomplete or invalid, clear it
-            this.setState({ value: "" });
-            this.props.onChange(null);
-        }
-    };
-
-    formatDateString(dateString) {
-        if (!dateString) {
-            return "";
-        }
-
-        // Only format strings that look like a date
-        if (!this.isValidDateString(dateString)) {
-            return dateString;
-        }
-
-        // Add slashes to format the date as DD/MM/YYYY
-        const parts = dateString.match(/^(\d{0,2})(\d{0,2})(\d{0,4})$/);
-        const day = parts[1] || "";
-        const month = parts[2] || "";
-        const year = parts[3] || "";
-        const formattedString = [day, month, year].filter(Boolean).join("/");
-        return formattedString;
-    }
-
-    isValidDateString(dateString) {
-        // Use a regular expression to check that the string matches the format DD/MM/YYYY
-        const pattern = /^\d{0,2}\/\d{0,2}\/\d{0,4}$/;
-        if (!pattern.test(dateString)) {
-            return false;
-        }
-
-        // Parse the input string manually and check each component
-        const parts = dateString.split("/");
-        const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        const year = parseInt(parts[2], 10);
-        const inputDate = new Date(year, month, day);
-
-        return inputDate.getDate() === day && inputDate.getMonth() === month && inputDate.getFullYear() === year;
-    }
-
-    render() {
-        return <input type="text" value={this.state.value} onChange={this.handleChange} onBlur={this.handleBlur} placeholder="DD/MM/AAAA" className="form-control" />;
     }
 }
 

@@ -185,11 +185,12 @@ function BuscaItensMovimentoRM(CODCOLIGADA, IDMOV) {
 	});
 }
 
-function BuscaDivergencias() {
+function BuscaDivergencias(Filtros) {
+	console.log(Filtros)
 	return new Promise(async (resolve, reject) => {
 		try {
 			var Divergencias = await BuscaListaDeDivergencias();
-			var Movimentos = await BuscaMovimentosDasDivergencias(Divergencias);
+			var Movimentos = await BuscaMovimentosDasDivergencias(Divergencias, Filtros);
 			Divergencias = InsereNasDivergenciasAsInformacoesDoMovimento(Divergencias, Movimentos);
 			resolve(Divergencias);
 		} catch (error) {
@@ -204,33 +205,41 @@ function BuscaDivergencias() {
 		], null);
 	}
 
-	async function BuscaMovimentosDasDivergencias(Divergencias) {
+	async function BuscaMovimentosDasDivergencias(Divergencias, Filtros) {
 		//Extrai CODCOLIGADA e IDMOV das Divergencias
 		var ListaDeCODCOLIGADAeIDMOV = Divergencias.map(({ CODCOLIGADA, IDMOV }) => ({ CODCOLIGADA, IDMOV }));
 		return await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
 			DatasetFactory.createConstraint("Operacao", "BuscaMovimentos", "BuscaMovimentos", ConstraintType.MUST),
-			DatasetFactory.createConstraint("Movimentos", JSON.stringify(ListaDeCODCOLIGADAeIDMOV), JSON.stringify(ListaDeCODCOLIGADAeIDMOV), ConstraintType.MUST)
+			DatasetFactory.createConstraint("Movimentos", JSON.stringify(ListaDeCODCOLIGADAeIDMOV), JSON.stringify(ListaDeCODCOLIGADAeIDMOV), ConstraintType.MUST),
+			DatasetFactory.createConstraint("Filtros", JSON.stringify(Filtros), JSON.stringify(Filtros), ConstraintType.MUST),			
 		], null);
 	}
 
 	function InsereNasDivergenciasAsInformacoesDoMovimento(Divergencias, Movimentos) {
 		return Divergencias.map(Divergencia => {
 			var Movimento = Movimentos.find(e => e.CODCOLIGADA == Divergencia.CODCOLIGADA && e.IDMOV == Divergencia.IDMOV);
+			if (Movimento) {
+				Divergencia.OBS_DIVERG = JSON.parse(Divergencia.OBS_DIVERG);
 
-			Divergencia.OBS_DIVERG = JSON.parse(Divergencia.OBS_DIVERG)
-			const { COLIGADA, CODFILIAL, FILIAL, FORNECEDOR, CGCCFO, CODTMV, CODUSUARIO, DATAEMISSAO, VALORBRUTO } = Movimento;
-			return {
-				...Divergencia,
-				COLIGADA,
-				CODFILIAL,
-				FILIAL,
-				FORNECEDOR,
-				CGCCFO,
-				CODTMV,
-				CODUSUARIO,
-				DATAEMISSAO,
-				VALORBRUTO
+				const { COLIGADA, CODFILIAL, FILIAL, FORNECEDOR, CGCCFO, CODTMV, CODUSUARIO, DATAEMISSAO, VALORBRUTO } = Movimento;
+				return {
+					...Divergencia,
+					COLIGADA,
+					CODFILIAL,
+					FILIAL,
+					FORNECEDOR,
+					CGCCFO,
+					CODTMV,
+					CODUSUARIO,
+					DATAEMISSAO,
+					VALORBRUTO
+				}
 			}
+			else{
+				return null;
+			}
+
+	
 		});
 	}
 }

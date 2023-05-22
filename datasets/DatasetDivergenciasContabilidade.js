@@ -5,7 +5,7 @@ function onSync(lastSyncDate) {
 
 }
 function createDataset(fields, constraints, sortFields) {
-    var [Operacao, Divergencia, CategoriaDivergencia, Movimentos] = ExtraiConstraints(constraints);
+    var [Operacao, Divergencia, CategoriaDivergencia, Movimentos, Filtros] = ExtraiConstraints(constraints);
     var myQuery = null;
 
     if (Operacao == "InsertCategoriaDivergencia") {
@@ -21,7 +21,7 @@ function createDataset(fields, constraints, sortFields) {
         myQuery = MontaQueryBuscaDivergencias();
     }
     else if (Operacao == "BuscaMovimentos") {
-        myQuery = MontaQueryBuscaMovimentos(Movimentos);
+        myQuery = MontaQueryBuscaMovimentos(Movimentos, Filtros);
     }
     
 
@@ -46,6 +46,7 @@ function ExtraiConstraints(constraints) {
     var Divergencia = null;
     var CategoriaDivergencia = null;
     var Movimentos = null;
+    var Filtros = null;
 
     for (i = 0; i < constraints.length; i++) {
         if (constraints[i].fieldName == "Operacao") {
@@ -60,16 +61,13 @@ function ExtraiConstraints(constraints) {
         else if (constraints[i].fieldName == "Movimentos") {
             Movimentos = JSON.parse(constraints[i].initialValue);
         }
+        else if (constraints[i].fieldName == "Filtros") {
+            console.log("Filtros: " + constraints[i].initialValue)
+            Filtros = JSON.parse(constraints[i].initialValue);
+        }
     }
 
-    return [Operacao, Divergencia, CategoriaDivergencia, Movimentos];
-
-/*
-    if (Operacao && (Divergencia || CategoriaDivergencia)) {
-    }
-    else {
-        throw "Constraints não informadas.";
-    }*/
+    return [Operacao, Divergencia, CategoriaDivergencia, Movimentos, Filtros];
 }
 
 function MontaQueryInsertDivergencia(Divergencia) {
@@ -120,7 +118,7 @@ function MontaQueryBuscaDivergencias(){
         INNER JOIN CATEGORIASDIVERGENCIASCONTABILIDADE ON CATEGORIASDIVERGENCIASCONTABILIDADE.ID = DIVERGENCIASCONTABILIDADE.CATEGORIA";
 }
 
-function MontaQueryBuscaMovimentos(Movimentos){
+function MontaQueryBuscaMovimentos(Movimentos, Filtros){
     var MovimentosPorColigada = [];
 
     //Agrupa os Movimentos por CODCOLIGADA
@@ -152,7 +150,19 @@ function MontaQueryBuscaMovimentos(Movimentos){
         INNER JOIN GCOLIGADA ON TMOV.CODCOLIGADA = GCOLIGADA.CODCOLIGADA\
         INNER JOIN GFILIAL ON TMOV.CODCOLIGADA = GFILIAL.CODCOLIGADA AND TMOV.CODFILIAL = GFILIAL.CODFILIAL\
         INNER JOIN FCFO ON (TMOV.CODCOLIGADA = FCFO.CODCOLIGADA OR FCFO.CODCOLIGADA = 0) AND TMOV.CODCFO = FCFO.CODCFO\
-    WHERE " + WhereCODCOLIGADAAndIDMOV; 
+        INNER JOIN TLOC ON TMOV.CODLOC = TLOC.CODLOC AND TMOV.CODCOLIGADA = TLOC.CODCOLIGADA\
+    WHERE (" + WhereCODCOLIGADAAndIDMOV + ") "; 
+
+
+    log.info("Filtros.Obra: " + Filtros.Obra);
+    if (Filtros.Obra && Filtros.Obra != "Todos")  {
+        var WhereObras = " AND TLOC.NOME = '" + Filtros.Obra + "' ";
+        myQuery += WhereObras;
+    }
+
+
+
+
     
     return myQuery;
 }
