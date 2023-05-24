@@ -5,7 +5,7 @@ function onSync(lastSyncDate) {
 
 }
 function createDataset(fields, constraints, sortFields) {
-    var [Operacao, Divergencia, CategoriaDivergencia, Movimentos, Filtros] = ExtraiConstraints(constraints);
+    var [Operacao, Divergencia, CategoriaDivergencia, Movimentos] = ExtraiConstraints(constraints);
     var myQuery = null;
 
     if (Operacao == "InsertCategoriaDivergencia") {
@@ -21,7 +21,7 @@ function createDataset(fields, constraints, sortFields) {
         myQuery = MontaQueryBuscaDivergencias();
     }
     else if (Operacao == "BuscaMovimentos") {
-        myQuery = MontaQueryBuscaMovimentos(Movimentos, Filtros);
+        myQuery = MontaQueryBuscaMovimentos(Movimentos);
     }
     
 
@@ -46,7 +46,6 @@ function ExtraiConstraints(constraints) {
     var Divergencia = null;
     var CategoriaDivergencia = null;
     var Movimentos = null;
-    var Filtros = null;
 
     for (i = 0; i < constraints.length; i++) {
         if (constraints[i].fieldName == "Operacao") {
@@ -61,13 +60,9 @@ function ExtraiConstraints(constraints) {
         else if (constraints[i].fieldName == "Movimentos") {
             Movimentos = JSON.parse(constraints[i].initialValue);
         }
-        else if (constraints[i].fieldName == "Filtros") {
-            console.log("Filtros: " + constraints[i].initialValue)
-            Filtros = JSON.parse(constraints[i].initialValue);
-        }
     }
 
-    return [Operacao, Divergencia, CategoriaDivergencia, Movimentos, Filtros];
+    return [Operacao, Divergencia, CategoriaDivergencia, Movimentos];
 }
 
 function MontaQueryInsertDivergencia(Divergencia) {
@@ -118,7 +113,7 @@ function MontaQueryBuscaDivergencias(){
         INNER JOIN CATEGORIASDIVERGENCIASCONTABILIDADE ON CATEGORIASDIVERGENCIASCONTABILIDADE.ID = DIVERGENCIASCONTABILIDADE.CATEGORIA";
 }
 
-function MontaQueryBuscaMovimentos(Movimentos, Filtros){
+function MontaQueryBuscaMovimentos(Movimentos){
     var MovimentosPorColigada = [];
 
     //Agrupa os Movimentos por CODCOLIGADA
@@ -145,7 +140,7 @@ function MontaQueryBuscaMovimentos(Movimentos, Filtros){
     
     log.info("WhereCODCOLIGADAAndIDMOV: "  + WhereCODCOLIGADAAndIDMOV)
     var myQuery = 
-    "SELECT TMOV.CODCOLIGADA, GCOLIGADA.NOME as COLIGADA, TMOV.IDMOV, GFILIAL.CODFILIAL, GFILIAL.NOME as FILIAL, FCFO.NOME as FORNECEDOR, FCFO.CGCCFO, TMOV.CODTMV, TMOV.VALORBRUTO, TMOV.DATAEMISSAO, TMOV.CODUSUARIO\
+    "SELECT TMOV.CODCOLIGADA, GCOLIGADA.NOME as COLIGADA, TMOV.IDMOV, GFILIAL.CODFILIAL, GFILIAL.NOME as FILIAL, FCFO.NOME as FORNECEDOR, FCFO.CGCCFO, TMOV.CODTMV, TMOV.VALORBRUTO, TMOV.DATAEMISSAO, TMOV.CODUSUARIO, TLOC.NOME as OBRA\
     FROM TMOV\
         INNER JOIN GCOLIGADA ON TMOV.CODCOLIGADA = GCOLIGADA.CODCOLIGADA\
         INNER JOIN GFILIAL ON TMOV.CODCOLIGADA = GFILIAL.CODCOLIGADA AND TMOV.CODFILIAL = GFILIAL.CODFILIAL\
@@ -154,16 +149,6 @@ function MontaQueryBuscaMovimentos(Movimentos, Filtros){
     WHERE (" + WhereCODCOLIGADAAndIDMOV + ") "; 
 
 
-    log.info("Filtros.Obra: " + Filtros.Obra);
-    if (Filtros.Obra && Filtros.Obra != "Todos")  {
-        var WhereObras = " AND TLOC.NOME = '" + Filtros.Obra + "' ";
-        myQuery += WhereObras;
-    }
-
-
-
-
-    
     return myQuery;
 }
 

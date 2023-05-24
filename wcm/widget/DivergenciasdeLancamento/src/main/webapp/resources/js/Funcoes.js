@@ -186,12 +186,12 @@ function BuscaItensMovimentoRM(CODCOLIGADA, IDMOV) {
 }
 
 function BuscaDivergencias(Filtros) {
-	console.log(Filtros)
 	return new Promise(async (resolve, reject) => {
 		try {
 			var Divergencias = await BuscaListaDeDivergencias();
-			var Movimentos = await BuscaMovimentosDasDivergencias(Divergencias, Filtros);
+			var Movimentos = await BuscaMovimentosDasDivergencias(Divergencias);
 			Divergencias = InsereNasDivergenciasAsInformacoesDoMovimento(Divergencias, Movimentos);
+			Divergencias = AplicaFiltroNasDivergencias(Divergencias, Filtros);
 			resolve(Divergencias);
 		} catch (error) {
 			console.error(error);
@@ -205,23 +205,22 @@ function BuscaDivergencias(Filtros) {
 		], null);
 	}
 
-	async function BuscaMovimentosDasDivergencias(Divergencias, Filtros) {
+	async function BuscaMovimentosDasDivergencias(Divergencias) {
 		//Extrai CODCOLIGADA e IDMOV das Divergencias
 		var ListaDeCODCOLIGADAeIDMOV = Divergencias.map(({ CODCOLIGADA, IDMOV }) => ({ CODCOLIGADA, IDMOV }));
 		return await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
 			DatasetFactory.createConstraint("Operacao", "BuscaMovimentos", "BuscaMovimentos", ConstraintType.MUST),
-			DatasetFactory.createConstraint("Movimentos", JSON.stringify(ListaDeCODCOLIGADAeIDMOV), JSON.stringify(ListaDeCODCOLIGADAeIDMOV), ConstraintType.MUST),
-			DatasetFactory.createConstraint("Filtros", JSON.stringify(Filtros), JSON.stringify(Filtros), ConstraintType.MUST),			
+			DatasetFactory.createConstraint("Movimentos", JSON.stringify(ListaDeCODCOLIGADAeIDMOV), JSON.stringify(ListaDeCODCOLIGADAeIDMOV), ConstraintType.MUST)
 		], null);
 	}
 
 	function InsereNasDivergenciasAsInformacoesDoMovimento(Divergencias, Movimentos) {
-		return Divergencias.map(Divergencia => {
+		Divergencias= Divergencias.map(Divergencia => {
 			var Movimento = Movimentos.find(e => e.CODCOLIGADA == Divergencia.CODCOLIGADA && e.IDMOV == Divergencia.IDMOV);
 			if (Movimento) {
 				Divergencia.OBS_DIVERG = JSON.parse(Divergencia.OBS_DIVERG);
 
-				const { COLIGADA, CODFILIAL, FILIAL, FORNECEDOR, CGCCFO, CODTMV, CODUSUARIO, DATAEMISSAO, VALORBRUTO } = Movimento;
+				const { COLIGADA, CODFILIAL, FILIAL, FORNECEDOR, CGCCFO, CODTMV, CODUSUARIO, DATAEMISSAO, VALORBRUTO, OBRA } = Movimento;
 				return {
 					...Divergencia,
 					COLIGADA,
@@ -232,15 +231,64 @@ function BuscaDivergencias(Filtros) {
 					CODTMV,
 					CODUSUARIO,
 					DATAEMISSAO,
-					VALORBRUTO
+					VALORBRUTO,
+					OBRA
 				}
 			}
 			else{
 				return null;
 			}
-
-	
 		});
+
+		Divergencias = Divergencias.filter(e=> e!=null);
+
+		return Divergencias;
+	}
+
+	function AplicaFiltroNasDivergencias(Divergencias, Filtros){
+		console.log(Filtros)
+
+		return Divergencias.filter(Divergencia=>{
+			if (ValidaFiltros(Divergencia, Filtros)) {
+				return true;
+			}
+			else{
+				return false;
+			}
+		});
+	}
+
+	function ValidaFiltros(Divergencia, Filtros){
+		if (Filtros.Obra != "Todos" && Filtros.Obra != Divergencia.OBRA) {
+			console.log("Obra")
+			return false;
+		}
+
+		if (Filtros.Usuario != "Todos" && Filtros.Usuario != Divergencia.CODUSUARIO) {
+			console.log("Usuario")
+			return false;
+		}
+
+		if (Filtros.TipoDeMovimento != "Todos" && Filtros.TipoDeMovimento != Divergencia.CODTMV) {
+			console.log("TipoDeMovimento")
+			return false;
+		}
+
+		if ((Filtros.Status == "Ativo" && Divergencia.STATUS != "true") || (Filtros.Status == "Cancelado" && Divergencia.STATUS != false) ) {
+			console.log(Filtros.Status, Divergencia.STATUS)
+
+			console.log("STATUS")
+			return false;
+		}
+
+
+		console.log(Filtros.Periodo, Filtros.PeriodoInicio.format("YYYY-MM-DD"), Filtros.PeriodoFim.format("YYYY-MM-DD"), Divergencia.DATAEMISSAO.split(" ")[0], Divergencia.CREATEDON)
+
+		if ((Filtros.Periodo == "Emissao" && (Filtros.PeriodoInicio.format("YYYY-MM-DD") > Divergencia.DATAEMISSAO.split(" ")[0] || Filtros.PeriodoFim.format("YYYY-MM-DD") < Divergencia.DATAEMISSAO.split(" ")[0]) ) || (Filtros.Periodo == "Lancamento" && (Filtros.PeriodoInicio.format("YYYY-MM-DD") > Divergencia.CREATEDON || Filtros.PeriodoFim.format("YYYY-MM-DD") < Filtros.CREATEDON) )) {
+			return false;
+		}
+
+		return true;
 	}
 }
 
@@ -452,7 +500,6 @@ function AbreModalDetalhes(Divergencia, onCancelarDivergencia) {
 }
 
 
-
 // UTILS
 
 function makeid(length) {
@@ -621,5 +668,3 @@ async function BuscaObras() {
 
 	return 	permissoes.filter(e=> e.CODCOLIGADA == 1).map(({CODCCUSTO, perfil}) => ({CODCCUSTO, perfil}))
 }
-
-

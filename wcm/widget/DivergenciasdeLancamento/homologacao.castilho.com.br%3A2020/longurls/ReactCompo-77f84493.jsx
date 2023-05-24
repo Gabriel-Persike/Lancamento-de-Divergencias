@@ -19,12 +19,6 @@ function AppRoot() {
         handleBuscaDivergencias();
     }, []);
 
-    useEffect(() => {
-        console.log("useEffectFiltros", Filtros);
-
-    }, [Filtros])
-    
-
     async function handleBuscaDivergencias() {
         var filtros = {
             Obra: Filtros.FiltroObra,
@@ -76,13 +70,11 @@ function AppRoot() {
     }
 
     function handleChangeFiltro(target, value) {
-  console.log("handleChange", target, value);
+        var filtros = Filtros;
+        filtros[target] = value;
+        setFiltros(filtros);
+    }
 
-  setFiltros((prevFiltros) => ({
-    ...prevFiltros,
-    [target]: value
-  }));
-}
     return (
         <ErrorBoundary>
             <div id="divCollapse">
@@ -882,7 +874,7 @@ function FiltroListaDivergencias({ FiltroObra, FiltroUsuario, FiltroTipoDeMovime
     }, []);
 
         useEffect(() => {
-          console.log("Render",FiltroPeriodoInicio)
+          console.log(FiltroPeriodoInicio)
 
         })
         
