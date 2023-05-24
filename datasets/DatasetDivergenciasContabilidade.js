@@ -1,11 +1,13 @@
 function defineStructure() {
 
 }
+
 function onSync(lastSyncDate) {
 
 }
+
 function createDataset(fields, constraints, sortFields) {
-    var [Operacao, Divergencia, CategoriaDivergencia, Movimentos] = ExtraiConstraints(constraints);
+    var [Operacao, Divergencia, CategoriaDivergencia, Movimentos, CancelamentoDivergencia] = ExtraiConstraints(constraints);
     var myQuery = null;
 
     if (Operacao == "InsertCategoriaDivergencia") {
@@ -23,11 +25,11 @@ function createDataset(fields, constraints, sortFields) {
     else if (Operacao == "BuscaMovimentos") {
         myQuery = MontaQueryBuscaMovimentos(Movimentos);
     }
+    else if(Operacao == "CancelarDivergencia"){
+        myQuery = MontaQueryCancelamentoDaDivergencia(CancelamentoDivergencia);
+    }
     
-
     log.info("myQuery: " + myQuery)
-
-
 
     if (Operacao == "BuscaMovimentos") {
         return executaQueryNaCastilhoRM(myQuery);
@@ -46,6 +48,7 @@ function ExtraiConstraints(constraints) {
     var Divergencia = null;
     var CategoriaDivergencia = null;
     var Movimentos = null;
+    var CancelamentoDivergencia = null;
 
     for (i = 0; i < constraints.length; i++) {
         if (constraints[i].fieldName == "Operacao") {
@@ -60,9 +63,12 @@ function ExtraiConstraints(constraints) {
         else if (constraints[i].fieldName == "Movimentos") {
             Movimentos = JSON.parse(constraints[i].initialValue);
         }
+        else if (constraints[i].fieldName == "CancelamentoDivergencia") {
+            CancelamentoDivergencia = JSON.parse(constraints[i].initialValue);
+        }
     }
 
-    return [Operacao, Divergencia, CategoriaDivergencia, Movimentos];
+    return [Operacao, Divergencia, CategoriaDivergencia, Movimentos, CancelamentoDivergencia];
 }
 
 function MontaQueryInsertDivergencia(Divergencia) {
@@ -145,12 +151,27 @@ function MontaQueryBuscaMovimentos(Movimentos){
         INNER JOIN GCOLIGADA ON TMOV.CODCOLIGADA = GCOLIGADA.CODCOLIGADA\
         INNER JOIN GFILIAL ON TMOV.CODCOLIGADA = GFILIAL.CODCOLIGADA AND TMOV.CODFILIAL = GFILIAL.CODFILIAL\
         INNER JOIN FCFO ON (TMOV.CODCOLIGADA = FCFO.CODCOLIGADA OR FCFO.CODCOLIGADA = 0) AND TMOV.CODCFO = FCFO.CODCFO\
-        INNER JOIN TLOC ON TMOV.CODLOC = TLOC.CODLOC AND TMOV.CODCOLIGADA = TLOC.CODCOLIGADA\
+        INNER JOIN TLOC ON TMOV.CODLOC = TLOC.CODLOC AND TMOV.CODCOLIGADA = TLOC.CODCOLIGADA  AND TMOV.CODFILIAL = TLOC.CODFILIAL\
     WHERE (" + WhereCODCOLIGADAAndIDMOV + ") "; 
 
 
     return myQuery;
 }
+
+function MontaQueryCancelamentoDaDivergencia(CancelamentoDivergencia){
+    var myQuery = 
+    "UPDATE DIVERGENCIASCONTABILIDADE\
+    SET STATUS = 0,\
+    MOTIVO_CANC = '" + CancelamentoDivergencia.Motivo + "',\
+    EMAIL_PEND = " + CancelamentoDivergencia.EMAIL_PEND + ",\
+    MODIFIEDON = '" + CancelamentoDivergencia.MODIFIEDON + "',\
+    MODIFIEDBY = '" + CancelamentoDivergencia.MODIFIEDBY + "'\
+    WHERE ID = " + CancelamentoDivergencia.ID;
+
+
+    return myQuery;
+}
+
 
 function executaQueryNaCastilhoRM(query) {
     var newDataset = DatasetBuilder.newDataset(),

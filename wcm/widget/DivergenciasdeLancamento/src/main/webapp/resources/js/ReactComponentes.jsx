@@ -19,12 +19,6 @@ function AppRoot() {
         handleBuscaDivergencias();
     }, []);
 
-    useEffect(() => {
-        console.log("useEffectFiltros", Filtros);
-
-    }, [Filtros])
-    
-
     async function handleBuscaDivergencias() {
         var filtros = {
             Obra: Filtros.FiltroObra,
@@ -36,53 +30,17 @@ function AppRoot() {
             Status: Filtros.FiltroStatus
         };
 
-        var Divergencias = await BuscaDivergencias(filtros);
-        setDivergencias(Divergencias);
-        FLUIGC.toast({
-            title: "Diverngias encontradas",
-            message: "",
-            type: "success"
-        });
+        setDivergencias(await BuscaDivergencias(filtros));
         console.log(Divergencias);
     }
 
-    function handleCancelarDivergencia(id, Motivo) {
-        // var Divergencias = this.state.Divergencias.slice();
-        // var found = Divergencias.find((obj) => obj.ID == id);
-        // //Se foi foi encontrado uma divergencia com o mesmo ID passado no parametro
-        // if (found) {
-        //     //Deixa na lista somente os Objetos que tenham IDs diferente do ID passado para cancelar
-        //     //Basicamente Remove a Divergencia Cancelada, mas a logica usada é diferente por causa do Array.filter()
-        //     Divergencias = Divergencias.filter((obj) => obj.ID != id);
-        //     //Joga a Divergencia Cancelada na Lista de Divergencias Canceladas
-        //     var DivergenciasCanceladas = this.state.DivergenciasCanceladas.slice();
-        //     found.status = "Cancelado";
-        //     found.MotivoCancelamento = Motivo;
-        //     DivergenciasCanceladas.push(found);
-        //     this.setState(
-        //         {
-        //             Divergencias: Divergencias,
-        //             DivergenciasCanceladas: DivergenciasCanceladas
-        //         },
-        //         () => {
-        //             FLUIGC.toast({
-        //                 title: "Divergência Cancelada!",
-        //                 message: "",
-        //                 type: "warning"
-        //             });
-        //         }
-        //     );
-        // }
+    function handleChangeFiltro(target, value) {
+        setFiltros((prevFiltros) => ({
+            ...prevFiltros,
+            [target]: value
+        }));
     }
 
-    function handleChangeFiltro(target, value) {
-  console.log("handleChange", target, value);
-
-  setFiltros((prevFiltros) => ({
-    ...prevFiltros,
-    [target]: value
-  }));
-}
     return (
         <ErrorBoundary>
             <div id="divCollapse">
@@ -102,177 +60,31 @@ function AppRoot() {
                             Dashboards
                         </a>
                     </li>
+                    <li className="collapse-tab">
+                        <a href="#tabEnviarEmails" role="tab" id="atabEnviarEmails" data-toggle="tab" aria-expanded="true" className="tab">
+                            Enviar E-mail
+                        </a>
+                    </li>
                 </ul>
                 <div className="tab-content">
                     <div className="tab-pane active" id="tabLancarDivergencias">
                         <Lancamento />
                     </div>
                     <div className="tab-pane" id="tabListaDivergencias">
-                        <Panel Title="Filtro" HideAble={true} IniciaFechado={true}>
-                            <FiltroListaDivergencias FiltroObra={Filtros.FiltroObra} FiltroUsuario={Filtros.FiltroUsuario} FiltroTipoDeMovimento={Filtros.FiltroTipoDeMovimento} FiltroPeriodo={Filtros.FiltroPeriodo} FiltroPeriodoInicio={Filtros.FiltroPeriodoInicio} FiltroPeriodoFim={Filtros.FiltroPeriodoFim} FiltroStatus={Filtros.FiltroStatus} onChangeFiltro={(target, value) => handleChangeFiltro(target, value)} />
-                            <br />
-                            <div style={{ textAlign: "right" }}>
-                                <button
-                                    className="btn btn-success"
-                                    onClick={() => {
-                                        handleBuscaDivergencias();
-                                    }}
-                                >
-                                    Buscar
-                                </button>
-                            </div>
-                        </Panel>
-
-                        <ListaDivergencias Divergencias={Divergencias} onCancelarDivergencia={(ID, Motivo) => handleCancelarDivergencia(ID, Motivo)} />
+                        <FiltroListaDivergencias Filtros={Filtros} onChangeFiltro={(target, value) => handleChangeFiltro(target, value)} onBuscaDivergencias={handleBuscaDivergencias} />
+                        <ListaDivergencias Divergencias={Divergencias} />
                     </div>
                     <div className="tab-pane" id="tabDashboards">
                         {/* <DashboardDivergencias /> */}
+                    </div>
+                    <div className="tab-pane" id="tabEnviarEmails">
+                        <NotificarDivergencias />
                     </div>
                 </div>
             </div>
         </ErrorBoundary>
     );
 }
-
-// class AppRoot extends React.Component {
-//     constructor(props) {
-//         super(props);
-
-//         this.state = {
-//             Divergencias: [],
-//             DivergenciasCanceladas: [],
-//             MostraDivergenciasAtivas: true,
-//             FiltroObra: "Todos",
-//             FiltroUsuario: "Todos",
-//             FiltroTipoDeMovimento: "Todos",
-//             FiltroPeriodo: "Emissao",
-//             FiltroPeriodoInicio: moment().subtract(1, "year"),
-//             FiltroPeriodoFim: moment(),
-//             FiltroStatus: "Ativo"
-//         };
-//     }
-
-//     componentDidMount() {
-//         this.handleBuscaDivergencias();
-//     }
-
-//     async handleBuscaDivergencias() {
-//         var filtros = {
-//             Obra: this.state.FiltroObra,
-//             Usuario: this.state.FiltroUsuario,
-//             TipoDeMovimento: this.state.FiltroTipoDeMovimento,
-//             Periodo: this.state.FiltroPeriodo,
-//             PeriodoInicio: this.state.FiltroPeriodoInicio,
-//             PeriodoFim: this.state.FiltroPeriodoFim,
-//             Status: this.state.FiltroStatus
-//         };
-
-//         var Divergencias = await BuscaDivergencias(filtros);
-//         this.setState(
-//             {
-//                 Divergencias: Divergencias
-//             },
-//             () => {
-//                 FLUIGC.toast({
-//                     title: "Diverngias encontradas",
-//                     message: "",
-//                     type: "success"
-//                 });
-//                 console.log(this.state.Divergencias);
-//             }
-//         );
-//     }
-
-//     handleCancelarDivergencia(id, Motivo) {
-//         var Divergencias = this.state.Divergencias.slice();
-//         var found = Divergencias.find((obj) => obj.ID == id);
-
-//         //Se foi foi encontrado uma divergencia com o mesmo ID passado no parametro
-//         if (found) {
-//             //Deixa na lista somente os Objetos que tenham IDs diferente do ID passado para cancelar
-//             //Basicamente Remove a Divergencia Cancelada, mas a logica usada é diferente por causa do Array.filter()
-//             Divergencias = Divergencias.filter((obj) => obj.ID != id);
-
-//             //Joga a Divergencia Cancelada na Lista de Divergencias Canceladas
-//             var DivergenciasCanceladas = this.state.DivergenciasCanceladas.slice();
-//             found.status = "Cancelado";
-//             found.MotivoCancelamento = Motivo;
-//             DivergenciasCanceladas.push(found);
-
-//             this.setState(
-//                 {
-//                     Divergencias: Divergencias,
-//                     DivergenciasCanceladas: DivergenciasCanceladas
-//                 },
-//                 () => {
-//                     FLUIGC.toast({
-//                         title: "Divergência Cancelada!",
-//                         message: "",
-//                         type: "warning"
-//                     });
-//                 }
-//             );
-//         }
-//     }
-
-//     handleChangeFiltro(target, value) {
-//         this.setState({
-//             [target]: value
-//         });
-//     }
-
-//     render() {
-//         return (
-//             <ErrorBoundary>
-//                 <div id="divCollapse">
-//                     <ul id="coltabs" className="nav nav-tabs nav-justified nav-pills" role="tablist" style={{ paddingBottom: "0px", width: "100%" }}>
-//                         <li className="collapse-tab active">
-//                             <a href="#tabLancarDivergencias" role="tab" id="atabLancarDivergencias" data-toggle="tab" aria-expanded="true" className="tab">
-//                                 Lançar Divergência
-//                             </a>
-//                         </li>
-//                         <li className="collapse-tab">
-//                             <a href="#tabListaDivergencias" role="tab" id="atabListaDivergencias" data-toggle="tab" aria-expanded="true" className="tab">
-//                                 Lista de Divergências
-//                             </a>
-//                         </li>
-//                         <li className="collapse-tab">
-//                             <a href="#tabDashboards" role="tab" id="atabDashboards" data-toggle="tab" aria-expanded="true" className="tab">
-//                                 Dashboards
-//                             </a>
-//                         </li>
-//                     </ul>
-//                     <div className="tab-content">
-//                         <div className="tab-pane active" id="tabLancarDivergencias">
-//                             <Lancamento />
-//                         </div>
-//                         <div className="tab-pane" id="tabListaDivergencias">
-//                             <Panel Title="Filtro" HideAble={true} IniciaFechado={true}>
-//                                 <FiltroListaDivergencias FiltroObra={this.state.FiltroObra} FiltroUsuario={this.state.FiltroUsuario} FiltroTipoDeMovimento={this.state.FiltroTipoDeMovimento} FiltroPeriodo={this.state.FiltroPeriodo} FiltroPeriodoInicio={this.state.FiltroPeriodoInicio} FiltroPeriodoFim={this.state.FiltroPeriodoFim} FiltroStatus={this.state.FiltroStatus} onChangeFiltro={(target, value) => this.handleChangeFiltro(target, value)} />
-//                                 <br />
-//                                 <div style={{ textAlign: "right" }}>
-//                                     <button
-//                                         className="btn btn-success"
-//                                         onClick={() => {
-//                                             this.handleBuscaDivergencias();
-//                                         }}
-//                                     >
-//                                         Buscar
-//                                     </button>
-//                                 </div>
-//                             </Panel>
-
-//                             <ListaDivergencias Divergencias={this.state.MostraDivergenciasAtivas == true ? this.state.Divergencias : this.state.DivergenciasCanceladas} onCancelarDivergencia={(ID, Motivo) => this.handleCancelarDivergencia(ID, Motivo)} />
-//                         </div>
-//                         <div className="tab-pane" id="tabDashboards">
-//                             {/* <DashboardDivergencias /> */}
-//                         </div>
-//                     </div>
-//                 </div>
-//             </ErrorBoundary>
-//         );
-//     }
-// }
 
 class Lancamento extends React.Component {
     constructor(props) {
@@ -730,7 +542,7 @@ function LancamentoDivergencia({ CategoriaDivergencia, onChangeCategoriaDivergen
     );
 }
 
-function ListaDivergencias({ Divergencias, onCancelarDivergencia }) {
+function ListaDivergencias({ Divergencias }) {
     useEffect(() => {
         //Ao Criar o componente Inicia a DataTables
         DataTableDivergencias = $("#TableDivergencias").DataTable({
@@ -772,7 +584,7 @@ function ListaDivergencias({ Divergencias, onCancelarDivergencia }) {
                 },
                 {
                     render: function (data, type, row) {
-                        if (row.STATUS == false) {
+                        if (row.STATUS == "false") {
                             return "<div style='text-align:center'><button class='btn btn-danger btnShowDetails bs-docs-popover-hover' data-toggle='popover' data-content='" + row.MOTIVO_CANC + "' >Detalhes</button></div>";
                         } else {
                             return "<div style='text-align:center'><button class='btn btn-primary btnShowDetails'>Detalhes</button></div>";
@@ -821,21 +633,15 @@ function ListaDivergencias({ Divergencias, onCancelarDivergencia }) {
         });
 
         //Toda vez que o componente for atualizado Cria a trigger on("draw") na DataTables
-        DataTableDivergencias.on("draw", { onCancelarDivergencia: onCancelarDivergencia }, (event) => {
-            //Importante notar que e passado o parametro onCancelarDivergencia no event
-            //Esse parametro vai ser repassado para a funcao AbreModalDetalhes()
-            //Por sua vez a funcao AbreModalDetalhes() repassar o onCancelarDivergencia para a Modal que será criada
-            //Assim a Modal criada conseguira chamar o onCancelarDivergencia caso o usuario clique no Botao Cancelar
-
+        DataTableDivergencias.on("draw", () => {
             FLUIGC.popover(".bs-docs-popover-hover", { trigger: "hover", placement: "auto" });
             $(".btnShowDetails").off("click");
-            $(".btnShowDetails").on("click", { onCancelarDivergencia: event.data.onCancelarDivergencia }, function (event) {
+            $(".btnShowDetails").on("click", function () {
                 //Cria a trigger no botão Detalhes que ao ser clicado abre a Modal Detalhes
                 var tr = $(this).closest("tr");
                 var row = DataTableDivergencias.row(tr);
                 var values = row.data();
-                //Passa as informacoes da Divergencia e o handler de cancelar divergencia para a funcao que inicia a Modal Detalhes
-                AbreModalDetalhes(values, event.data.onCancelarDivergencia);
+                AbreModalDetalhes(values);
             });
         });
     }, []);
@@ -847,8 +653,6 @@ function ListaDivergencias({ Divergencias, onCancelarDivergencia }) {
         setTimeout(() => {
             DataTableDivergencias.columns.adjust().draw();
         }, 200);
-
-        console.log(Divergencias);
     }, [Divergencias]);
 
     return (
@@ -872,20 +676,15 @@ function ListaDivergencias({ Divergencias, onCancelarDivergencia }) {
     );
 }
 
-function FiltroListaDivergencias({ FiltroObra, FiltroUsuario, FiltroTipoDeMovimento, FiltroPeriodo, FiltroPeriodoInicio, FiltroPeriodoFim, FiltroStatus, onChangeFiltro, onBuscarDivergencias }) {
+function FiltroListaDivergencias({ Filtros, onChangeFiltro, onBuscaDivergencias }) {
     const [OptionsObras, setOptionsObras] = useState([]);
     const [OptionsUsuarios, setOptionsUsuarios] = useState([]);
+    const [BuscandoDivergencias, setBuscandoDivergencias] = useState(false);
 
     useEffect(() => {
         CriaListaNoFiltroPorObra();
         CriaListaNoFiltroPorUsuario();
     }, []);
-
-        useEffect(() => {
-          console.log("Render",FiltroPeriodoInicio)
-
-        })
-        
 
     async function CriaListaNoFiltroPorObra() {
         var obras = await BuscaObras();
@@ -906,19 +705,19 @@ function FiltroListaDivergencias({ FiltroObra, FiltroUsuario, FiltroTipoDeMovime
     }
 
     return (
-        <div>
+        <Panel Title="Filtro" HideAble={true} IniciaFechado={true}>
             <div className="row">
                 <div className="col-md-4">
                     <b>Obra:</b>
-                    <Select style={{ width: "100%" }} showSearch filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())} options={OptionsObras} value={FiltroObra} onChange={(e) => onChangeFiltro("FiltroObra", e)} />
+                    <Select style={{ width: "100%" }} showSearch filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())} options={OptionsObras} value={Filtros.FiltroObra} onChange={(e) => onChangeFiltro("FiltroObra", e)} />
                 </div>
                 <div className="col-md-4">
                     <b>Usuário:</b>
-                    <Select style={{ width: "100%" }} showSearch filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())} options={OptionsUsuarios} value={FiltroUsuario} onChange={(e) => onChangeFiltro("FiltroUsuario", e)} />
+                    <Select style={{ width: "100%" }} showSearch filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())} options={OptionsUsuarios} value={Filtros.FiltroUsuario} onChange={(e) => onChangeFiltro("FiltroUsuario", e)} />
                 </div>
                 <div className="col-md-4">
                     <b>Tipo de Movimento:</b>
-                    <select className="form-control" value={FiltroTipoDeMovimento} onChange={(e) => onChangeFiltro("FiltroTipoDeMovimento", e.target.value)}>
+                    <select className="form-control" value={Filtros.FiltroTipoDeMovimento} onChange={(e) => onChangeFiltro("FiltroTipoDeMovimento", e.target.value)}>
                         <option value="Todos">Todos</option>
                         <option value="1.2.01">1.2.01</option>
                         <option value="1.2.05">1.2.05</option>
@@ -931,7 +730,7 @@ function FiltroListaDivergencias({ FiltroObra, FiltroUsuario, FiltroTipoDeMovime
             <div className="row">
                 <div className="col-md-4">
                     <b>Período:</b>
-                    <select className="form-control" value={FiltroPeriodo} onChange={(e) => onChangeFiltro("FiltroPeriodo", e.target.value)}>
+                    <select className="form-control" value={Filtros.FiltroPeriodo} onChange={(e) => onChangeFiltro("FiltroPeriodo", e.target.value)}>
                         <option value="Emissao">Data de Emissão</option>
                         <option value="Lancamento">Data de Lançamento da Divergência</option>
                     </select>
@@ -942,27 +741,43 @@ function FiltroListaDivergencias({ FiltroObra, FiltroUsuario, FiltroTipoDeMovime
                     <DatePicker
                         format={"DD/MM/YYYY"}
                         onChange={(e) => {
-                            console.log(e);
                             onChangeFiltro("FiltroPeriodoInicio", e);
                         }}
-                        value={FiltroPeriodoInicio}
+                        value={Filtros.FiltroPeriodoInicio}
+                        style={{ width: "100%" }}
                     />
                 </div>
                 <div className="col-md-2">
                     <b>Periodo Final:</b>
                     <br />
-                    <DatePicker format={"DD/MM/YYYY"} onChange={(e) => onChangeFiltro("FiltroPeriodoFim", e)} value={FiltroPeriodoFim} />
+                    <DatePicker format={"DD/MM/YYYY"} onChange={(e) => onChangeFiltro("FiltroPeriodoFim", e)} value={Filtros.FiltroPeriodoFim} style={{ width: "100%" }} />
                 </div>
                 <div className="col-md-4">
                     <b>Status:</b>
-                    <select className="form-control" value={FiltroStatus} onChange={(e) => onChangeFiltro("FiltroStatus", e.target.value)}>
+                    <select className="form-control" value={Filtros.FiltroStatus} onChange={(e) => onChangeFiltro("FiltroStatus", e.target.value)}>
                         <option value="Ativo">Ativo</option>
                         <option value="Cancelado">Cancelado</option>
                         <option value="Todos">Todos</option>
                     </select>
                 </div>
             </div>
-        </div>
+            <br />
+            <div style={{ textAlign: "right" }}>
+                <button
+                    className="btn btn-success"
+                    onClick={async () => {
+                        if (!BuscandoDivergencias) {
+                            setBuscandoDivergencias(true);
+                            await onBuscaDivergencias();
+                            console.log("Set false");
+                            setBuscandoDivergencias(false);
+                        }
+                    }}
+                >
+                    {BuscandoDivergencias == true ? "Buscando..." : "Buscar"}
+                </button>
+            </div>
+        </Panel>
     );
 }
 
@@ -976,8 +791,42 @@ class ModalDetalhes extends React.Component {
         };
         this.BuscaMovimento(this.props.Divergencia.CODCOLIGADA, this.props.Divergencia.IDMOV);
 
-        this.CancelaDivergencia = this.CancelaDivergencia.bind(this); //Bind necessaria pra usar a function em conjunto com o jQuery na funcao componentDidMount
-        this.getMotivoCancelamento = this.getMotivoCancelamento.bind(this); //Bind necessaria pra usar a function em conjunto com o jQuery na funcao componentDidMount
+        this.handleCancelaDivergencia = this.handleCancelaDivergencia.bind(this); //Bind necessaria pra usar a function em conjunto com o jQuery na funcao componentDidMount
+        // this.getMotivoCancelamento = this.getMotivoCancelamento.bind(this); //Bind necessaria pra usar a function em conjunto com o jQuery na funcao componentDidMount
+    }
+
+    componentDidMount() {
+        //Caso o usuário tenha clicado no botão Cancelar abre uma Modal pro usuario confirmar se realmente quer cancelar
+        $("[Cancelar-Divergencia]").on("click", { CancelaDivergencia: this.handleCancelaDivergencia }, function (event) {
+            var myModal2 = FLUIGC.modal(
+                {
+                    title: "Deseja Cancelar a Divergência?",
+                    content: "",
+                    id: "fluig-modal2",
+                    size: "large",
+                    actions: [
+                        {
+                            label: "Sim, Desejo Cancelar a Divergência",
+                            classType: "btn-danger",
+                            bind: "Confirma-Cancelar-Divergencia",
+                            autoClose: true
+                        },
+                        {
+                            label: "Não, Fechar sem Cancelar",
+                            autoClose: true
+                        }
+                    ]
+                },
+                function (err, data) {
+                    if (!err) {
+                        $("[Confirma-Cancelar-Divergencia]").on("click", function () {
+                            //Caso o usuario escolha que realmente deseja cancelar chama o handler de cancelar a divergencia e fecha a modal
+                            event.data.CancelaDivergencia();
+                        });
+                    }
+                }
+            );
+        });
     }
 
     BuscaMovimento(CODCOLIGADA, IDMOV) {
@@ -1107,6 +956,23 @@ class ModalDetalhes extends React.Component {
                     });*/
     }
 
+    handleCancelaDivergencia() {
+        if (this.state.MotivoCancelamento) {
+            CancelaDivergencia(this.props.Divergencia, this.state.MotivoCancelamento);
+            myModal.remove();
+        } else {
+            FLUIGC.toast({
+                title: "Motivo do Cancelamento não informado!",
+                message: "",
+                type: "warning"
+            });
+        }
+    }
+
+    getMotivoCancelamento() {
+        return this.state.MotivoCancelamento;
+    }
+
     renderItens() {
         var Itens = this.state.Itens;
         var list = [];
@@ -1116,59 +982,6 @@ class ModalDetalhes extends React.Component {
         }
 
         return <tbody>{list}</tbody>;
-    }
-
-    CancelaDivergencia() {
-        this.props.onCancelarDivergencia(this.state.Movimento.ID, this.state.MotivoCancelamento);
-    }
-
-    getMotivoCancelamento() {
-        return this.state.MotivoCancelamento;
-    }
-
-    componentDidMount() {
-        //Caso o usuário tenha clicado no botão Cancelar abre uma Modal pro usuario confirmar se realmente quer cancelar
-        $("[Cancelar-Divergencia]").on("click", { CancelaDivergencia: this.CancelaDivergencia, MotivoCancelamento: this.getMotivoCancelamento }, function (event) {
-            if (!event.data.MotivoCancelamento()) {
-                //Verifica se o motivo do cancelamento foi inserido
-                FLUIGC.toast({
-                    title: "O Motivo do Cancelamento não foi Informado!",
-                    message: "",
-                    type: "warning"
-                });
-                return;
-            } else {
-                var myModal2 = FLUIGC.modal(
-                    {
-                        title: "Deseja Cancelar a Divergência?",
-                        content: "",
-                        id: "fluig-modal2",
-                        size: "large",
-                        actions: [
-                            {
-                                label: "Sim, Desejo Cancelar a Divergência",
-                                classType: "btn-danger",
-                                bind: "Confirma-Cancelar-Divergencia",
-                                autoClose: true
-                            },
-                            {
-                                label: "Não, Fechar sem Cancelar",
-                                autoClose: true
-                            }
-                        ]
-                    },
-                    function (err, data) {
-                        if (!err) {
-                            $("[Confirma-Cancelar-Divergencia]").on("click", function () {
-                                //Caso o usuario escolha que realmente deseja cancelar chama o handler de cancelar a divergencia e fecha a modal
-                                event.data.CancelaDivergencia();
-                                myModal.remove();
-                            });
-                        }
-                    }
-                );
-            }
-        });
     }
 
     renderOptFieldsCategoria() {
@@ -1188,6 +1001,7 @@ class ModalDetalhes extends React.Component {
     }
 
     render() {
+        console.log(this.props.Divergencia);
         return (
             <div>
                 <Panel Title="Lançamento">
@@ -1287,7 +1101,7 @@ class ModalDetalhes extends React.Component {
                         </label>
                         <br />
 
-                        {this.props.Divergencia.STATUS != false ? <textarea rows="4" onChange={(e) => this.setState({ MotivoCancelamento: e.target.value })} value={this.state.MotivoCancelamento} className="form-control form-control-danger" /> : <span>{this.props.Divergencia.MOTIVO_CANC}</span>}
+                        {this.props.Divergencia.STATUS != "false" ? <textarea rows="4" onChange={(e) => this.setState({ MotivoCancelamento: e.target.value })} value={this.state.MotivoCancelamento} className="form-control form-control-danger" /> : <span>{this.props.Divergencia.MOTIVO_CANC}</span>}
                     </div>
                 </Panel>
             </div>
@@ -1541,4 +1355,143 @@ class ErrorBoundary extends React.Component {
 
         return this.props.children;
     }
+}
+
+function NotificarDivergencias() {
+    const [Filtros, setFiltros] = useState({
+        FiltroObra: "Todos",
+        FiltroUsuario: "Todos",
+        FiltroTipoDeMovimento: "Todos",
+        FiltroPeriodo: "Emissao",
+        FiltroPeriodoInicio: moment().subtract(1, "year"),
+        FiltroPeriodoFim: moment(),
+        FiltroStatus: "Todos"
+    });
+    const [Divergencias, setDivergencias] = useState([]);
+
+    function handleChangeFiltro(target, value) {
+        setFiltros((prevFiltros) => ({
+            ...prevFiltros,
+            [target]: value
+        }));
+    }
+
+    async function handleBuscaDivergencias() {
+        var filtros = {
+            Obra: Filtros.FiltroObra,
+            Usuario: Filtros.FiltroUsuario,
+            TipoDeMovimento: Filtros.FiltroTipoDeMovimento,
+            Periodo: Filtros.FiltroPeriodo,
+            PeriodoInicio: Filtros.FiltroPeriodoInicio,
+            PeriodoFim: Filtros.FiltroPeriodoFim,
+            Status: Filtros.FiltroStatus,
+            EMAIL_PEND: true
+        };
+
+        var Divergencias = await BuscaDivergencias(filtros);
+        Divergencias = AgrupaDivergenciasPorUsuario(Divergencias);
+
+        setDivergencias(Divergencias);
+
+        function AgrupaDivergenciasPorUsuario(Divergencias) {
+            var DivergenciasAgrupadasPorUsuario = [];
+            for (const Divergencia of Divergencias) {
+                var found = DivergenciasAgrupadasPorUsuario.find((e) => e.CODUSUARIO == Divergencia.CODUSUARIO);
+
+                if (found) {
+                    found.Divergencias.push(Divergencia);
+                } else {
+                    DivergenciasAgrupadasPorUsuario.push({
+                        CODUSUARIO: Divergencia.CODUSUARIO,
+                        Divergencias: [Divergencia]
+                    });
+                }
+            }
+
+            return DivergenciasAgrupadasPorUsuario;
+        }
+    }
+
+    function RenderizaDivergencias(){
+        var lista = [];
+
+        for (const Divergencia of Divergencias) {
+            lista.push(<DivergenciasUsuario Usuario={Divergencia.CODUSUARIO} Divergencias={Divergencia.Divergencias}/>)
+        }
+
+        return lista;
+    }
+
+    return (
+        <>
+            <FiltroListaDivergencias Filtros={Filtros} onChangeFiltro={(target, value) => handleChangeFiltro(target, value)} onBuscaDivergencias={handleBuscaDivergencias} />
+            <Panel Title="Enviar Notificações">
+           
+                <div>
+                    {RenderizaDivergencias()}
+                </div>
+                <br />
+                <button className="btn btn-success" style={{margin: "auto"}}>Notificar</button>
+
+            </Panel>
+        </>
+    );
+}
+
+function DivergenciasUsuario({Usuario, Divergencias}){
+    function renderizaDivergencias(){
+        var rows = [];
+
+        for (const Divergencia of Divergencias) {
+            rows.push(<tr>
+                <td>{FormataDataParaDDMMYYYY(Divergencia.DATAEMISSAO)}</td>
+                <td>{Divergencia.CODTMV}</td>
+                <td>{Divergencia.CODFILIAL}</td>
+                <td>{FormataDataParaDDMMYYYY(Divergencia.CREATEDON)}</td>
+                <td>{Divergencia.CGCCFO} <br /> {Divergencia.FORNECEDOR}</td>
+                <td>{Divergencia.CATEGORIA}</td>
+            </tr>)
+        }
+        return rows;
+    }
+
+    return(
+        <Panel Title={Usuario}>
+            <div className="row">
+                <div className="col-md-12">
+                    <label htmlFor="" style={{width:"100%"}}>E-mails em cópia: 
+                    <input type="text" className="form-control" />
+                    </label>
+                </div>
+            </div>
+            <br />
+            <table className="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Emissão</th>
+                        <th>T.M.</th>
+                        <th>Filial</th>
+                        <th>Criação</th>
+                        <th>Fornecedor</th>
+                        <th>Divergência</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {renderizaDivergencias()}
+                </tbody>
+            </table>
+            <br />
+            <div className="row">
+                <div className="col-md-12">
+                    <span>
+                        
+                        <label htmlFor="">
+                        <input type="checkbox" />
+                        Enviar divergencias?
+                        </label>
+                    </span>
+                </div>
+            </div>
+        </Panel>
+    )
 }

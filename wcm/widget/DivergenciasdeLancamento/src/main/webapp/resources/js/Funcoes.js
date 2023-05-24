@@ -85,23 +85,6 @@ function BuscaFiliais(CODCOLIGADA) {
 	});
 }
 
-function BuscaFiliais(CODCOLIGADA) {
-	//Joga as Filiais na variavel Global Filiais
-	DatasetFactory.getDataset("GFILIAL", null, [
-		DatasetFactory.createConstraint("CODCOLIGADA", CODCOLIGADA, CODCOLIGADA, ConstraintType.MUST)
-	], null, {
-		success: (ds => {
-			Filiais = [];
-			for (const filial of ds.values) {
-				Filiais.push({
-					CODFILIAL: filial.CODFILIAL,
-					FILIAL: filial.NOMEFANTASIA
-				});
-			}
-		})
-	});
-}
-
 function BuscaMovimentoRM(CODCOLIGADA, IDMOV) {
 	return new Promise((resolve, reject) => {
 		DatasetFactory.getDataset("BuscaMovimentoDivergencias", null, [
@@ -215,7 +198,7 @@ function BuscaDivergencias(Filtros) {
 	}
 
 	function InsereNasDivergenciasAsInformacoesDoMovimento(Divergencias, Movimentos) {
-		Divergencias= Divergencias.map(Divergencia => {
+		Divergencias = Divergencias.map(Divergencia => {
 			var Movimento = Movimentos.find(e => e.CODCOLIGADA == Divergencia.CODCOLIGADA && e.IDMOV == Divergencia.IDMOV);
 			if (Movimento) {
 				Divergencia.OBS_DIVERG = JSON.parse(Divergencia.OBS_DIVERG);
@@ -235,56 +218,51 @@ function BuscaDivergencias(Filtros) {
 					OBRA
 				}
 			}
-			else{
+			else {
 				return null;
 			}
 		});
 
-		Divergencias = Divergencias.filter(e=> e!=null);
+		Divergencias = Divergencias.filter(e => e != null);
 
 		return Divergencias;
 	}
 
-	function AplicaFiltroNasDivergencias(Divergencias, Filtros){
+	function AplicaFiltroNasDivergencias(Divergencias, Filtros) {
 		console.log(Filtros)
 
-		return Divergencias.filter(Divergencia=>{
+		return Divergencias.filter(Divergencia => {
 			if (ValidaFiltros(Divergencia, Filtros)) {
 				return true;
 			}
-			else{
+			else {
 				return false;
 			}
 		});
 	}
 
-	function ValidaFiltros(Divergencia, Filtros){
+	function ValidaFiltros(Divergencia, Filtros) {
 		if (Filtros.Obra != "Todos" && Filtros.Obra != Divergencia.OBRA) {
-			console.log("Obra")
 			return false;
 		}
 
 		if (Filtros.Usuario != "Todos" && Filtros.Usuario != Divergencia.CODUSUARIO) {
-			console.log("Usuario")
 			return false;
 		}
 
 		if (Filtros.TipoDeMovimento != "Todos" && Filtros.TipoDeMovimento != Divergencia.CODTMV) {
-			console.log("TipoDeMovimento")
 			return false;
 		}
 
-		if ((Filtros.Status == "Ativo" && Divergencia.STATUS != "true") || (Filtros.Status == "Cancelado" && Divergencia.STATUS != false) ) {
-			console.log(Filtros.Status, Divergencia.STATUS)
-
-			console.log("STATUS")
+		if ((Filtros.Status == "Ativo" && Divergencia.STATUS != "true") || (Filtros.Status == "Cancelado" && Divergencia.STATUS != "false")) {
 			return false;
 		}
 
+		if ((Filtros.Periodo == "Emissao" && (Filtros.PeriodoInicio.format("YYYY-MM-DD") > Divergencia.DATAEMISSAO.split(" ")[0] || Filtros.PeriodoFim.format("YYYY-MM-DD") < Divergencia.DATAEMISSAO.split(" ")[0])) || (Filtros.Periodo == "Lancamento" && (Filtros.PeriodoInicio.format("YYYY-MM-DD") > Divergencia.CREATEDON || Filtros.PeriodoFim.format("YYYY-MM-DD") < Filtros.CREATEDON))) {
+			return false;
+		}
 
-		console.log(Filtros.Periodo, Filtros.PeriodoInicio.format("YYYY-MM-DD"), Filtros.PeriodoFim.format("YYYY-MM-DD"), Divergencia.DATAEMISSAO.split(" ")[0], Divergencia.CREATEDON)
-
-		if ((Filtros.Periodo == "Emissao" && (Filtros.PeriodoInicio.format("YYYY-MM-DD") > Divergencia.DATAEMISSAO.split(" ")[0] || Filtros.PeriodoFim.format("YYYY-MM-DD") < Divergencia.DATAEMISSAO.split(" ")[0]) ) || (Filtros.Periodo == "Lancamento" && (Filtros.PeriodoInicio.format("YYYY-MM-DD") > Divergencia.CREATEDON || Filtros.PeriodoFim.format("YYYY-MM-DD") < Filtros.CREATEDON) )) {
+		if (Filtros.EMAIL_PEND == true && Divergencia.EMAIL_PEND == "false") {
 			return false;
 		}
 
@@ -354,6 +332,31 @@ function CriaDivergencia(Divergencia) {
 			reject();
 		}
 	});
+}
+
+function CancelaDivergencia(Divergencia, Motivo) {
+	var EMAIL_PEND = Divergencia.EMAIL_PEND;
+	if (EMAIL_PEND == "true") {
+		//Se o Email estava pendende, então significa que o usuário ainda não foi notificado da Divergencia, por isso não é necessário notificar o cancelamento
+		EMAIL_PEND = 0;
+	}
+	else {
+		//Caso o Email já tenha sido enviado, então é necessário notificar o cancelamento da Divergencia
+		EMAIL_PEND = 1;
+	}
+
+	var CancelamentoDivergencia = {
+		ID: Divergencia.ID,
+		Motivo: Motivo,
+		EMAIL_PEND: EMAIL_PEND,
+		MODIFIEDON: getDateNowSQL(),
+		MODIFIEDBY: WCMAPI.userCode
+	}
+
+	ExecutaDataset("DatasetDivergenciasContabilidade", null, [
+		DatasetFactory.createConstraint("Operacao", "CancelarDivergencia", "CancelarDivergencia", ConstraintType.MUST),
+		DatasetFactory.createConstraint("CancelamentoDivergencia", JSON.stringify(CancelamentoDivergencia), JSON.stringify(CancelamentoDivergencia), ConstraintType.MUST)
+	], null);
 }
 
 function NotificaDivergencias(Divergencias) {
@@ -472,36 +475,42 @@ function EnviaEmail(CorpoEmail, usuario) {
 		});
 }
 
-function AbreModalDetalhes(Divergencia, onCancelarDivergencia) {
+function AbreModalDetalhes(Divergencia) {
 	//Abre a Modal
 	console.log(Divergencia);
+
+
+	var actions = [];
+	if (Divergencia.STATUS != "false") {
+		actions.push({
+			"label": "Cancelar",
+			"classType": "btn-danger",
+			"bind": "Cancelar-Divergencia"
+		});
+	}
+	actions.push({
+		'label': 'Fechar',
+		'autoClose': true
+	});
+
+
 	myModal = FLUIGC.modal({
 		title: 'Divergência',
 		content: '<div id="rootModalDetalhes"></div>',
 		id: 'fluig-modal',
 		size: 'full',
-		actions: [
-			{
-				"label": "Cancelar",
-				"classType": "btn-danger",
-				"bind": "Cancelar-Divergencia"
-			}, {
-				'label': 'Fechar',
-				'autoClose': true
-			}
-		]
+		actions: actions
 	}, function (err, data) {
 		if (err) {
 		} else {
 			//Apos criar a Modal inicia o <ModalDetalhes/> dentro da Modal
-			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia, onCancelarDivergencia: onCancelarDivergencia }), document.querySelector("#rootModalDetalhes"));
+			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia }), document.querySelector("#rootModalDetalhes"));
 		}
 	});
 }
 
 
 // UTILS
-
 function makeid(length) {
 	var result = '';
 	var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -609,6 +618,12 @@ function getDateNowSQL() {
 	return `${year}-${month}-${day}`;
 }
 
+function FormataDataParaDDMMYYYY(data){
+	data = data.split(" ")[0];
+	data = data.split("-").reverse().join("/");
+	return data;
+}
+
 function ExecutaDataset(DatasetName, Fields, Constraints, Order, AceitaRetornarVazio = false) {
 	return new Promise((resolve, reject) => {
 		DatasetFactory.getDataset(DatasetName, Fields, Constraints, Order, {
@@ -660,11 +675,11 @@ async function UsuarioTemPermissaoGeral(user) {
 async function BuscaObras() {
 	var user = WCMAPI.userCode;
 	var permissoes = await ExecutaDataset("BuscaPermissaoColigadasUsuario", null, [
-		(await UsuarioTemPermissaoGeral(user) ? 
-			DatasetFactory.createConstraint("permissaoGeral", "true", "true", ConstraintType.MUST) : 
+		(await UsuarioTemPermissaoGeral(user) ?
+			DatasetFactory.createConstraint("permissaoGeral", "true", "true", ConstraintType.MUST) :
 			DatasetFactory.createConstraint("usuario", user, user, ConstraintType.MUST)
 		)
 	], null);
 
-	return 	permissoes.filter(e=> e.CODCOLIGADA == 1).map(({CODCCUSTO, perfil}) => ({CODCCUSTO, perfil}))
+	return permissoes.filter(e => e.CODCOLIGADA == 1).map(({ CODCCUSTO, perfil }) => ({ CODCCUSTO, perfil }))
 }
