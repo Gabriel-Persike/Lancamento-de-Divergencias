@@ -618,7 +618,7 @@ function getDateNowSQL() {
 	return `${year}-${month}-${day}`;
 }
 
-function FormataDataParaDDMMYYYY(data){
+function FormataDataParaDDMMYYYY(data) {
 	data = data.split(" ")[0];
 	data = data.split("-").reverse().join("/");
 	return data;
@@ -628,19 +628,26 @@ function ExecutaDataset(DatasetName, Fields, Constraints, Order, AceitaRetornarV
 	return new Promise((resolve, reject) => {
 		DatasetFactory.getDataset(DatasetName, Fields, Constraints, Order, {
 			success: (ds => {
-				if (!ds || !ds.values || (ds.values.length == 0 && !AceitaRetornarVazio) || (ds.values[0][0] == "deu erro! " && ds.values[0][1] != "com.microsoft.sqlserver.jdbc.SQLServerException: A instrução não retornou um conjunto de resultados.")) {
-					console.error("Erro ao executar o Dataset: " + DatasetName);
-					console.error(ds);
-					FLUIGC.toast({
-						title: "Erro ao executar o Dataset: " + DatasetName,
-						message: "",
-						type: "warning"
-					});
+				try {
+					if (!ds || !ds.values || (ds.values.length == 0 && !AceitaRetornarVazio) || (ds.values[0][0] == "deu erro! " && ds.values[0][1] != "com.microsoft.sqlserver.jdbc.SQLServerException: A instrução não retornou um conjunto de resultados.")) {
+						console.error("Erro ao executar o Dataset: " + DatasetName);
+						console.error(ds);
+						FLUIGC.toast({
+							title: "Erro ao executar o Dataset: " + DatasetName,
+							message: "",
+							type: "warning"
+						});
+						reject();
+					}
+					else {
+						resolve(ds.values);
+					}
+				} catch (error) {
+					console.error(error);
+
 					reject();
 				}
-				else {
-					resolve(ds.values);
-				}
+
 			}),
 			error: (e => {
 				console.error("Erro ao executar o Dataset: " + DatasetName);
@@ -682,4 +689,36 @@ async function BuscaObras() {
 	], null);
 
 	return permissoes.filter(e => e.CODCOLIGADA == 1).map(({ CODCCUSTO, perfil }) => ({ CODCCUSTO, perfil }))
+}
+
+function BuscaEmailUsuario(usuario) {
+	var ds = DatasetFactory.getDataset("colleague", null, [DatasetFactory.createConstraint("colleagueId", usuario, usuario, ConstraintType.MUST)], null);
+
+	if (ds.values.length > 0) {
+		return ds.values[0]["mail"];
+	}
+	else {
+		return "";
+	}
+}
+
+async function BuscaChefeDeEscritorioDoGrupo(groupId) {
+	var Usuarios = await ExecutaDataset("colleagueGroup", null, [
+		DatasetFactory.createConstraint("groupId", groupId, groupId, ConstraintType.MUST)
+	], null);
+
+	var Chefes = await ExecutaDataset("colleagueGroup", null, [
+		DatasetFactory.createConstraint("groupId", "Chefes de Escritório", "Chefes de Escritório", ConstraintType.MUST)
+	], null);
+
+	Usuarios = Usuarios.filter(Usuario => {
+		return Chefes.some(Chefe => Usuario["colleagueGroupPK.colleagueId"] == Chefe["colleagueGroupPK.colleagueId"]);
+	});
+
+	return Usuarios;
+}
+
+function validaEmail(email) {
+	const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	return emailPattern.test(email);
 }

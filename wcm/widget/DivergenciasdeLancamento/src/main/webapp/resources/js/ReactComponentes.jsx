@@ -71,7 +71,11 @@ function AppRoot() {
                         <Lancamento />
                     </div>
                     <div className="tab-pane" id="tabListaDivergencias">
-                        <FiltroListaDivergencias Filtros={Filtros} onChangeFiltro={(target, value) => handleChangeFiltro(target, value)} onBuscaDivergencias={handleBuscaDivergencias} />
+                        <FiltroListaDivergencias
+                            Filtros={Filtros}
+                            onChangeFiltro={(target, value) => handleChangeFiltro(target, value)}
+                            onBuscaDivergencias={handleBuscaDivergencias}
+                        />
                         <ListaDivergencias Divergencias={Divergencias} />
                     </div>
                     <div className="tab-pane" id="tabDashboards">
@@ -184,7 +188,17 @@ class Lancamento extends React.Component {
         var list = [];
 
         for (const [Index, item] of Itens.entries()) {
-            list.push(<Item key={Index} ItemIndex={Index} CodigoProduto={item.CodigoProduto} Produto={item.Produto} Quantidade={item.Quantidade} ValorUnit={item.ValorUnit} CODUND={item.CODUND} />);
+            list.push(
+                <Item
+                    key={Index}
+                    ItemIndex={Index}
+                    CodigoProduto={item.CodigoProduto}
+                    Produto={item.Produto}
+                    Quantidade={item.Quantidade}
+                    ValorUnit={item.ValorUnit}
+                    CODUND={item.CODUND}
+                />
+            );
         }
 
         return <tbody>{list}</tbody>;
@@ -298,7 +312,13 @@ class Lancamento extends React.Component {
                     </div>
                 </Panel>
                 <Panel Title="Motivo da Divergência">
-                    <LancamentoDivergencia CategoriaDivergencia={this.state.CategoriaDivergencia} onChangeCategoriaDivergencia={(e) => this.setState({ CategoriaDivergencia: e })} ObservacaoDivergencia={this.state.ObservacaoDivergencia} onChangeObservacaoDivergencia={(e) => this.setState({ ObservacaoDivergencia: e })} onChangeCamposCategoriaDivergencia={(e) => this.setState({ CamposCategoriaDivergencia: e })} />
+                    <LancamentoDivergencia
+                        CategoriaDivergencia={this.state.CategoriaDivergencia}
+                        onChangeCategoriaDivergencia={(e) => this.setState({ CategoriaDivergencia: e })}
+                        ObservacaoDivergencia={this.state.ObservacaoDivergencia}
+                        onChangeObservacaoDivergencia={(e) => this.setState({ ObservacaoDivergencia: e })}
+                        onChangeCamposCategoriaDivergencia={(e) => this.setState({ CamposCategoriaDivergencia: e })}
+                    />
                     <br />
                     <div style={{ textAlign: "center" }}>
                         <button className="btn btn-danger" onClick={() => this.lancarDivergencia()}>
@@ -503,7 +523,16 @@ function LancamentoDivergencia({ CategoriaDivergencia, onChangeCategoriaDivergen
                 />
             );
         } else {
-            return <input type="text" name={label} id={label} className="form-control" value={value} onChange={(e) => handleChangeDadosCamposComplementares(e.target.name, e.target.value)} />;
+            return (
+                <input
+                    type="text"
+                    name={label}
+                    id={label}
+                    className="form-control"
+                    value={value}
+                    onChange={(e) => handleChangeDadosCamposComplementares(e.target.name, e.target.value)}
+                />
+            );
         }
     }
 
@@ -585,7 +614,11 @@ function ListaDivergencias({ Divergencias }) {
                 {
                     render: function (data, type, row) {
                         if (row.STATUS == "false") {
-                            return "<div style='text-align:center'><button class='btn btn-danger btnShowDetails bs-docs-popover-hover' data-toggle='popover' data-content='" + row.MOTIVO_CANC + "' >Detalhes</button></div>";
+                            return (
+                                "<div style='text-align:center'><button class='btn btn-danger btnShowDetails bs-docs-popover-hover' data-toggle='popover' data-content='" +
+                                row.MOTIVO_CANC +
+                                "' >Detalhes</button></div>"
+                            );
                         } else {
                             return "<div style='text-align:center'><button class='btn btn-primary btnShowDetails'>Detalhes</button></div>";
                         }
@@ -709,11 +742,25 @@ function FiltroListaDivergencias({ Filtros, onChangeFiltro, onBuscaDivergencias 
             <div className="row">
                 <div className="col-md-4">
                     <b>Obra:</b>
-                    <Select style={{ width: "100%" }} showSearch filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())} options={OptionsObras} value={Filtros.FiltroObra} onChange={(e) => onChangeFiltro("FiltroObra", e)} />
+                    <Select
+                        style={{ width: "100%" }}
+                        showSearch
+                        filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
+                        options={OptionsObras}
+                        value={Filtros.FiltroObra}
+                        onChange={(e) => onChangeFiltro("FiltroObra", e)}
+                    />
                 </div>
                 <div className="col-md-4">
                     <b>Usuário:</b>
-                    <Select style={{ width: "100%" }} showSearch filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())} options={OptionsUsuarios} value={Filtros.FiltroUsuario} onChange={(e) => onChangeFiltro("FiltroUsuario", e)} />
+                    <Select
+                        style={{ width: "100%" }}
+                        showSearch
+                        filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
+                        options={OptionsUsuarios}
+                        value={Filtros.FiltroUsuario}
+                        onChange={(e) => onChangeFiltro("FiltroUsuario", e)}
+                    />
                 </div>
                 <div className="col-md-4">
                     <b>Tipo de Movimento:</b>
@@ -978,7 +1025,17 @@ class ModalDetalhes extends React.Component {
         var list = [];
 
         for (const [Index, item] of Itens.entries()) {
-            list.push(<Item key={Index} ItemIndex={Index} CodigoProduto={item.CodigoProduto} Produto={item.Produto} Quantidade={item.Quantidade} ValorUnit={item.ValorUnit} CODUND={item.CODUND} />);
+            list.push(
+                <Item
+                    key={Index}
+                    ItemIndex={Index}
+                    CodigoProduto={item.CodigoProduto}
+                    Produto={item.Produto}
+                    Quantidade={item.Quantidade}
+                    ValorUnit={item.ValorUnit}
+                    CODUND={item.CODUND}
+                />
+            );
         }
 
         return <tbody>{list}</tbody>;
@@ -1101,7 +1158,16 @@ class ModalDetalhes extends React.Component {
                         </label>
                         <br />
 
-                        {this.props.Divergencia.STATUS != "false" ? <textarea rows="4" onChange={(e) => this.setState({ MotivoCancelamento: e.target.value })} value={this.state.MotivoCancelamento} className="form-control form-control-danger" /> : <span>{this.props.Divergencia.MOTIVO_CANC}</span>}
+                        {this.props.Divergencia.STATUS != "false" ? (
+                            <textarea
+                                rows="4"
+                                onChange={(e) => this.setState({ MotivoCancelamento: e.target.value })}
+                                value={this.state.MotivoCancelamento}
+                                className="form-control form-control-danger"
+                            />
+                        ) : (
+                            <span>{this.props.Divergencia.MOTIVO_CANC}</span>
+                        )}
                     </div>
                 </Panel>
             </div>
@@ -1237,7 +1303,15 @@ class CNPJInput extends React.Component {
     }
 
     render() {
-        return <input type="text" className="form-control" value={this.props.value} onChange={(e) => this.handleChange(e.target.value)} onBlur={(e) => this.handleBlur(e.target.value)} />;
+        return (
+            <input
+                type="text"
+                className="form-control"
+                value={this.props.value}
+                onChange={(e) => this.handleChange(e.target.value)}
+                onBlur={(e) => this.handleBlur(e.target.value)}
+            />
+        );
     }
 }
 
@@ -1247,7 +1321,13 @@ class ProdutoInput extends React.Component {
 
         return (
             <div>
-                <antd.AutoComplete style={{ width: "100%" }} value={this.props.value} onChange={(e) => this.props.onChange(e)} options={options} filterOption={(inputValue, option) => option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1} />
+                <antd.AutoComplete
+                    style={{ width: "100%" }}
+                    value={this.props.value}
+                    onChange={(e) => this.props.onChange(e)}
+                    options={options}
+                    filterOption={(inputValue, option) => option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1}
+                />
             </div>
         );
     }
@@ -1389,11 +1469,11 @@ function NotificarDivergencias() {
         };
 
         var Divergencias = await BuscaDivergencias(filtros);
-        Divergencias = AgrupaDivergenciasPorUsuario(Divergencias);
-
+        Divergencias = await AgrupaDivergenciasPorUsuario(Divergencias);
+        console.log(Divergencias);
         setDivergencias(Divergencias);
 
-        function AgrupaDivergenciasPorUsuario(Divergencias) {
+        async function AgrupaDivergenciasPorUsuario(Divergencias) {
             var DivergenciasAgrupadasPorUsuario = [];
             for (const Divergencia of Divergencias) {
                 var found = DivergenciasAgrupadasPorUsuario.find((e) => e.CODUSUARIO == Divergencia.CODUSUARIO);
@@ -1403,6 +1483,9 @@ function NotificarDivergencias() {
                 } else {
                     DivergenciasAgrupadasPorUsuario.push({
                         CODUSUARIO: Divergencia.CODUSUARIO,
+                        EmailCopia: await BuscaEmailsCopia(Divergencia.CODUSUARIO),
+                        Observacao: "",
+                        CheckEnvio: false,
                         Divergencias: [Divergencia]
                     });
                 }
@@ -1410,13 +1493,60 @@ function NotificarDivergencias() {
 
             return DivergenciasAgrupadasPorUsuario;
         }
+
+        async function BuscaEmailsCopia(Usuario) {
+            try {
+                var emails = [BuscaEmailUsuario(Usuario), "contabilidade@castilho.com.br","rodrigo.ramos@castilho.com.br" ];
+                var ds = await ExecutaDataset("colleagueGroup", null, [DatasetFactory.createConstraint("colleagueId", Usuario, Usuario, ConstraintType.MUST)], null, true);
+
+                for (const Grupo of ds) {
+                    if (Grupo["colleagueGroupPK.groupId"] == "Comprador") {
+                        emails.push("karina.belli@castilho.com.br");
+                    } else if (Grupo["colleagueGroupPK.groupId"] == "Controladoria") {
+                        emails.push("claudio@castilho.com.br");
+                    } else if (Grupo["colleagueGroupPK.groupId"].substring(0, 4) == "Obra") {
+                        var chefes = await BuscaChefeDeEscritorioDoGrupo(Grupo["colleagueGroupPK.groupId"]);
+                        for (const Chefe of chefes) {
+                            emails.push(BuscaEmailUsuario(Chefe["colleagueGroupPK.colleagueId"]));
+                        }
+                    }
+                }
+
+                return emails.join("; ");
+            } catch (error) {return ""}
+        }
     }
 
-    function RenderizaDivergencias(){
+    function handleChangeDivergencias(CODUSUARIO, target, value) {
+        setDivergencias((prevDivergencias) => {
+            return  prevDivergencias.map((e) => {
+                if (e.CODUSUARIO == CODUSUARIO) {
+                    return {...e, [target]: value};
+                }else{
+                    return e;
+                }
+            });
+        });
+    }
+
+    function  DisparaDivergencias() {
+        console.log(Divergencias)
+    }
+
+    function RenderizaDivergencias() {
         var lista = [];
 
         for (const Divergencia of Divergencias) {
-            lista.push(<DivergenciasUsuario Usuario={Divergencia.CODUSUARIO} Divergencias={Divergencia.Divergencias}/>)
+            lista.push(
+                <DivergenciasUsuario
+                    Usuario={Divergencia.CODUSUARIO}
+                    Divergencias={Divergencia.Divergencias}
+                    EmailCopia={Divergencia.EmailCopia}
+                    Observacao={Divergencia.Observacao}
+                    CheckEnvio={Divergencia.CheckEnvio}
+                    onChangeDivergencias={handleChangeDivergencias}
+                />
+            );
         }
 
         return lista;
@@ -1426,72 +1556,108 @@ function NotificarDivergencias() {
         <>
             <FiltroListaDivergencias Filtros={Filtros} onChangeFiltro={(target, value) => handleChangeFiltro(target, value)} onBuscaDivergencias={handleBuscaDivergencias} />
             <Panel Title="Enviar Notificações">
-           
-                <div>
-                    {RenderizaDivergencias()}
-                </div>
+                <div>{RenderizaDivergencias()}</div>
                 <br />
-                <button className="btn btn-success" style={{margin: "auto"}}>Notificar</button>
-
+                <button className="btn btn-success" style={{ margin: "auto" }} onClick={DisparaDivergencias}>
+                    Notificar
+                </button>
             </Panel>
         </>
     );
 }
 
-function DivergenciasUsuario({Usuario, Divergencias}){
-    function renderizaDivergencias(){
+function DivergenciasUsuario({ Usuario, Divergencias, EmailCopia, Observacao, CheckEnvio, onChangeDivergencias }) {
+    var id = makeid(6);
+
+    function renderizaDivergencias() {
         var rows = [];
 
         for (const Divergencia of Divergencias) {
-            rows.push(<tr>
-                <td>{FormataDataParaDDMMYYYY(Divergencia.DATAEMISSAO)}</td>
-                <td>{Divergencia.CODTMV}</td>
-                <td>{Divergencia.CODFILIAL}</td>
-                <td>{FormataDataParaDDMMYYYY(Divergencia.CREATEDON)}</td>
-                <td>{Divergencia.CGCCFO} <br /> {Divergencia.FORNECEDOR}</td>
-                <td>{Divergencia.CATEGORIA}</td>
-            </tr>)
+            rows.push(
+                <tr>
+                    <td>{FormataDataParaDDMMYYYY(Divergencia.DATAEMISSAO)}</td>
+                    <td>{Divergencia.CODTMV}</td>
+                    <td>{Divergencia.CODFILIAL}</td>
+                    <td>{FormataDataParaDDMMYYYY(Divergencia.CREATEDON)}</td>
+                    <td>
+                        {Divergencia.CGCCFO} <br /> {Divergencia.FORNECEDOR}
+                    </td>
+                    <td>{Divergencia.CATEGORIA}</td>
+                </tr>
+            );
         }
         return rows;
     }
 
-    return(
+    return (
         <Panel Title={Usuario}>
             <div className="row">
                 <div className="col-md-12">
-                    <label htmlFor="" style={{width:"100%"}}>E-mails em cópia: 
-                    <input type="text" className="form-control" />
-                    </label>
+                    <div style={{ width: "fit-content", textAlign: "center", margin: "auto" }}>
+                        <div className="switch switch-success">
+                            <input
+                                className="switch-input"
+                                type="checkbox"
+                                id={"CheckEnviarDivergencia_" + id}
+                                checked={CheckEnvio}
+                                onChange={(e) => onChangeDivergencias(Usuario,"CheckEnvio"  , e.target.checked)}
+                            />
+                            <label className="switch-button" htmlFor={"CheckEnviarDivergencia_" + id}>
+                                Toggle
+                            </label>
+                        </div>
+                        <br />
+                        <label htmlFor={"CheckEnviarDivergencia_" + id}>Enviar Divergências?</label>
+                    </div>
                 </div>
             </div>
-            <br />
-            <table className="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Emissão</th>
-                        <th>T.M.</th>
-                        <th>Filial</th>
-                        <th>Criação</th>
-                        <th>Fornecedor</th>
-                        <th>Divergência</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {renderizaDivergencias()}
-                </tbody>
-            </table>
-            <br />
-            <div className="row">
-                <div className="col-md-12">
-                    <span>
-                        
-                        <label htmlFor="">
-                        <input type="checkbox" />
-                        Enviar divergencias?
-                        </label>
-                    </span>
+            {CheckEnvio == true && (
+                <div>
+                    <div className="row">
+                        <div className="col-md-12">
+                            <label htmlFor={"EmailsCopia_" + id} style={{ width: "100%" }}>
+                                E-mails em cópia:
+                            </label>
+                            <input
+                                type="text"
+                                id={"EmailsCopia_" + id}
+                                className="form-control"
+                                value={EmailCopia}
+                                onChange={(e) => {
+                                    onChangeDivergencias(Usuario, "EmailsCopia", e.target.value);
+                                }}
+                            />
+                        </div>
+                    </div>
+                    <br />
+                    <table className="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Emissão</th>
+                                <th>T.M.</th>
+                                <th>Filial</th>
+                                <th>Criação</th>
+                                <th>Fornecedor</th>
+                                <th>Divergência</th>
+                            </tr>
+                        </thead>
+                        <tbody>{renderizaDivergencias()}</tbody>
+                    </table>
+                    <br />
+                    <div className="row">
+                        <div className="col-md-12">
+                            <label htmlFor={"textObeservacoes" + id}>Observações: </label>
+                            <textarea
+                                id={"textObeservacoes" + id}
+                                rows="4"
+                                className="form-control"
+                                value={Observacao}
+                                onChange={(e) => onChangeDivergencias(Usuario, "Observacao", e.target.value)}
+                            />
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
         </Panel>
-    )
+    );
 }
