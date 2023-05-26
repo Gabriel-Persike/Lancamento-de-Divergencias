@@ -9,7 +9,7 @@ function AppRoot() {
         FiltroObra: "Todos",
         FiltroUsuario: "Todos",
         FiltroTipoDeMovimento: "Todos",
-        FiltroPeriodo: "Emissao",
+        FiltroPeriodo: "Lancamento",
         FiltroPeriodoInicio: moment().subtract(1, "year"),
         FiltroPeriodoFim: moment(),
         FiltroStatus: "Ativo"
@@ -55,11 +55,11 @@ function AppRoot() {
                             Lista de Divergências
                         </a>
                     </li>
-                    <li className="collapse-tab">
+                    {/* <li className="collapse-tab">
                         <a href="#tabDashboards" role="tab" id="atabDashboards" data-toggle="tab" aria-expanded="true" className="tab">
                             Dashboards
                         </a>
-                    </li>
+                    </li> */}
                     <li className="collapse-tab">
                         <a href="#tabEnviarEmails" role="tab" id="atabEnviarEmails" data-toggle="tab" aria-expanded="true" className="tab">
                             Enviar E-mail
@@ -79,7 +79,7 @@ function AppRoot() {
                         <ListaDivergencias Divergencias={Divergencias} />
                     </div>
                     <div className="tab-pane" id="tabDashboards">
-                        {/* <DashboardDivergencias /> */}
+                        <DashboardDivergencias />
                     </div>
                     <div className="tab-pane" id="tabEnviarEmails">
                         <NotificarDivergencias />
@@ -499,12 +499,16 @@ function LancamentoDivergencia({ CategoriaDivergencia, onChangeCategoriaDivergen
 
     function BuscaInputComponenteComBaseNoTipoDeInput(Tipo, label, value) {
         if (Tipo == "CPF/CNPJ") {
-            return <CNPJInput onChange={(e) => handleChangeDadosCamposComplementares(label, e)} value={value} />;
+            return <CPFCNPJInput onChange={(e) => handleChangeDadosCamposComplementares(label, e)} value={value} />;
+        } else if (Tipo == "CNPJ") {
+            return <CPFCNPJInput onChange={(e) => handleChangeDadosCamposComplementares(label, e)} value={value} type="CNPJ" />;
+        } else if (Tipo == "CPF") {
+            return <CPFCNPJInput onChange={(e) => handleChangeDadosCamposComplementares(label, e)} value={value} type="CPF" />;
         } else if (Tipo == "Produto") {
             return <ProdutoInput onChange={(e) => handleChangeDadosCamposComplementares(label, e)} value={value} />;
-        } else if (Tipo == "Departamento") {
-            return <DepartamentoInput onChange={(e) => handleChangeDadosCamposComplementares(label, e)} value={value} />;
-        } else if (Tipo == "Data") {
+        } else if (Tipo == "Money") {
+            return <MoneyInput onChange={(e) => handleChangeDadosCamposComplementares(label, e)} value={value} />;
+        } else if (Tipo == "Date") {
             return (
                 <DateInput
                     onChange={(e) => {
@@ -577,6 +581,9 @@ function ListaDivergencias({ Divergencias }) {
         DataTableDivergencias = $("#TableDivergencias").DataTable({
             pageLength: 25,
             columns: [
+                {
+                    data: "NUMEROMOV"
+                },
                 {
                     data: "DATAEMISSAO",
                     render: function (data, type, row) {
@@ -693,6 +700,7 @@ function ListaDivergencias({ Divergencias }) {
             <table className="table table-bordered table-striped" id="TableDivergencias" style={{ width: "100%" }}>
                 <thead>
                     <tr>
+                        <th>Número</th>
                         <th>Emissão</th>
                         <th>T.M.</th>
                         <th>Filial</th>
@@ -1046,12 +1054,25 @@ class ModalDetalhes extends React.Component {
         var list = [];
         var optFields = this.props.Divergencia.OBS_DIVERG.CamposComplementaresCategoria;
         for (const CampoComplementar of optFields) {
-            list.push(
-                <div className="col-md-4">
-                    <b>{CampoComplementar.label}: </b>
-                    <span>{CampoComplementar.value}</span>
-                </div>
-            );
+
+            if (CampoComplementar.type == "Money") {
+                list.push(
+                    <div className="col-md-4">
+                        <b>{CampoComplementar.label}: </b>
+                        <MoneySpan value={CampoComplementar.value}/>
+                    </div>
+                );
+            }
+            else{
+                list.push(
+                    <div className="col-md-4">
+                        <b>{CampoComplementar.label}: </b>
+                        <span>{CampoComplementar.value}</span>
+                    </div>
+                );
+            }
+
+          
         }
 
         return list;
@@ -1073,7 +1094,7 @@ class ModalDetalhes extends React.Component {
                         <div className="col-md-3">
                             <div>
                                 <b>Filial: </b>
-                                <span>{this.props.Divergencia.CODFILIAL}</span>
+                                <span>{this.props.Divergencia.CODFILIAL + " - " + this.props.Divergencia.FILIAL}</span>
                             </div>
                             <br />
                         </div>
@@ -1096,14 +1117,14 @@ class ModalDetalhes extends React.Component {
                         <div className="col-md-3">
                             <div>
                                 <b>Valor Total: </b>
-                                <MoneySpan text={this.props.Divergencia.VALORBRUTO != "" ? "R$" + parseFloat(this.props.Divergencia.VALORBRUTO).toFixed(2) : ""} />
+                                <MoneySpan value={this.props.Divergencia.VALORBRUTO != "" ? parseFloat(this.props.Divergencia.VALORBRUTO).toFixed(2) : ""} />
                             </div>
                             <br />
                         </div>
                         <div className="col-md-3">
                             <div>
                                 <b>Data de Emissão: </b>
-                                <span>{this.props.Divergencia.DATAEMISSAO}</span>
+                                <span>{FormataDataParaDDMMYYYY(this.props.Divergencia.DATAEMISSAO.split(" ")[0])}</span>
                             </div>
                             <br />
                         </div>
@@ -1139,7 +1160,7 @@ class ModalDetalhes extends React.Component {
                 <Panel Title="Divergência">
                     <div>
                         <h3>Divergência: {this.props.Divergencia.CATEGORIA}</h3>
-                        <b>Data de Criação: </b> <span>{this.props.Divergencia.CREATEDON}</span>
+                        <b>Data de Criação: </b> <span>{FormataDataParaDDMMYYYY(this.props.Divergencia.CREATEDON)}</span>
                     </div>
                     <div className="row">{this.renderOptFieldsCategoria()}</div>
                     <br />
@@ -1185,13 +1206,13 @@ function Item({ ItemIndex, CodigoProduto, Produto, Quantidade, ValorUnit, CODUND
                 <span>{CodigoProduto + " - " + Produto}</span>
             </td>
             <td>
-                <MoneySpan text={Quantidade + CODUND} />
+               {Quantidade + " " + CODUND}
             </td>
             <td>
-                <MoneySpan text={"R$ " + ValorUnit} />
+                <MoneySpan value={ValorUnit} QuantidadeDeCasasDecimais={4} />
             </td>
             <td>
-                <MoneySpan text={"R$ " + (Quantidade * ValorUnit).toFixed(2).toString()} />
+                <MoneySpan value={Quantidade * ValorUnit} />
             </td>
         </tr>
     );
@@ -1269,7 +1290,7 @@ function DashboardDivergencias() {
     return <div id="pieChart"></div>;
 }
 
-class CNPJInput extends React.Component {
+class CPFCNPJInput extends React.Component {
     handleChange(value) {
         value = value.replace(/\D/g, "");
         value = value.split("");
@@ -1387,20 +1408,87 @@ class FilialInput extends React.Component {
     }
 }
 
-class MoneySpan extends React.Component {
-    //Componente usado para mostrar valores númericos, ele deixa as casas decimais com fonte menor
-    render() {
-        if (this.props.text != "R$ ") {
-            return (
-                <div style={{ display: "inline-block" }}>
-                    <span>{this.props.text.split(".")[0]},</span>
-                    <span style={{ fontSize: "80%" }}>{this.props.text.split(".")[1]}</span>
-                </div>
-            );
+function MoneySpan({ value, QuantidadeDeCasasDecimais = 2 }) {
+    value = FormataValorParaMoeda(value);
+
+    function FormataValorParaMoeda(valor) {
+        if (isNaN(valor)) {
+            return " - ";
+        }
+
+        if (valor) {
+            valor = parseFloat(valor);
+        }
+
+
+        return valor.toLocaleString("pt-br", {
+                minimumFractionDigits: QuantidadeDeCasasDecimais,
+                maximumFractionDigits: QuantidadeDeCasasDecimais
+            });
+    }
+
+    return (
+        <div style={{ display: "inline-block" }}>
+            R$<span>{value.split(",")[0]},</span>
+            <span style={{ fontSize: "80%" }}>{value.split(",")[1]}</span>
+        </div>
+    );
+}
+
+function MoneyInput({ value, onChange, QuantidadeDeCasasDecimais = 2, className, readOnly }) {
+    function formatValue(value) {
+        if (value) {
+            value = value.split(".");
+            var int = value[0].toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+            var decimais = value[1] != undefined ? "," + value[1] : "";
+
+            return "R$ " + int + decimais;
         } else {
-            return "-";
+            return "R$ ";
         }
     }
+
+    function unformatValue(value) {
+        value = value.split(".").join("").split(",");
+        return value[0].replace(/[^0-9]/g, "") + (value[1] != undefined ? "." + value[1].replace(/[^0-9]/g, "") : "");
+    }
+
+    function handleChange(e) {
+        onChange(unformatValue(e.target.value));
+    }
+
+    function handleBlur(e) {
+        var value = e.target.value;
+        if (value.split(",").length > 1) {
+            value = value.split(",");
+            onChange(
+                value[0]
+                    .split(".")
+                    .join("")
+                    .replace(/[^0-9]/g, "") +
+                    "." +
+                    (value[1].replace(/[^0-9]/g, "") + "0000000000").substring(0, QuantidadeDeCasasDecimais)
+            );
+        } else {
+            value = value.replace(/[^0-9]/g, "");
+            onChange(value == "" ? "0" : value) + "." + "000000000".substring(0, QuantidadeDeCasasDecimais);
+        }
+    }
+
+    function handleFocus(e) {}
+
+    return (
+        <input
+            type="text"
+            value={formatValue(value)}
+            className={"form-control " + className}
+            readOnly={readOnly}
+            placeholder="R$"
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onFocus={handleFocus}
+        />
+    );
 }
 
 class ErrorBoundary extends React.Component {
@@ -1442,7 +1530,7 @@ function NotificarDivergencias() {
         FiltroObra: "Todos",
         FiltroUsuario: "Todos",
         FiltroTipoDeMovimento: "Todos",
-        FiltroPeriodo: "Emissao",
+        FiltroPeriodo: "Lancamento",
         FiltroPeriodoInicio: moment().subtract(1, "year"),
         FiltroPeriodoFim: moment(),
         FiltroStatus: "Todos"
@@ -1496,14 +1584,18 @@ function NotificarDivergencias() {
 
         async function BuscaEmailsCopia(Usuario) {
             try {
-                var emails = [BuscaEmailUsuario(Usuario), "contabilidade@castilho.com.br","rodrigo.ramos@castilho.com.br" ];
+                var emails = [BuscaEmailUsuario(Usuario), "contabilidade@castilho.com.br"];
                 var ds = await ExecutaDataset("colleagueGroup", null, [DatasetFactory.createConstraint("colleagueId", Usuario, Usuario, ConstraintType.MUST)], null, true);
+
+                var usuarioMatriz = false;
 
                 for (const Grupo of ds) {
                     if (Grupo["colleagueGroupPK.groupId"] == "Comprador") {
                         emails.push("karina.belli@castilho.com.br");
+                        usuarioMatriz = true;
                     } else if (Grupo["colleagueGroupPK.groupId"] == "Controladoria") {
                         emails.push("claudio@castilho.com.br");
+                        usuarioMatriz = true;
                     } else if (Grupo["colleagueGroupPK.groupId"].substring(0, 4) == "Obra") {
                         var chefes = await BuscaChefeDeEscritorioDoGrupo(Grupo["colleagueGroupPK.groupId"]);
                         for (const Chefe of chefes) {
@@ -1512,25 +1604,40 @@ function NotificarDivergencias() {
                     }
                 }
 
+                if (!usuarioMatriz) {
+                    emails.push("rodrio.ramos@castilho.com.br");
+                }
+
                 return emails.join("; ");
-            } catch (error) {return ""}
+            } catch (error) {
+                return "";
+            }
         }
     }
 
     function handleChangeDivergencias(CODUSUARIO, target, value) {
         setDivergencias((prevDivergencias) => {
-            return  prevDivergencias.map((e) => {
+            return prevDivergencias.map((e) => {
                 if (e.CODUSUARIO == CODUSUARIO) {
-                    return {...e, [target]: value};
-                }else{
+                    return { ...e, [target]: value };
+                } else {
                     return e;
                 }
             });
         });
     }
 
-    function  DisparaDivergencias() {
-        console.log(Divergencias)
+    function DisparaDivergencias() {
+        var list = [];
+
+        for (const Divergencia of Divergencias) {
+            if (Divergencia.CheckEnvio) {
+                list.push(Divergencia);
+            }
+        }
+
+        NotificaDivergencias(list);
+        handleBuscaDivergencias();
     }
 
     function RenderizaDivergencias() {
@@ -1575,6 +1682,7 @@ function DivergenciasUsuario({ Usuario, Divergencias, EmailCopia, Observacao, Ch
         for (const Divergencia of Divergencias) {
             rows.push(
                 <tr>
+                    <td>{Divergencia.NUMEROMOV}</td>
                     <td>{FormataDataParaDDMMYYYY(Divergencia.DATAEMISSAO)}</td>
                     <td>{Divergencia.CODTMV}</td>
                     <td>{Divergencia.CODFILIAL}</td>
@@ -1600,7 +1708,7 @@ function DivergenciasUsuario({ Usuario, Divergencias, EmailCopia, Observacao, Ch
                                 type="checkbox"
                                 id={"CheckEnviarDivergencia_" + id}
                                 checked={CheckEnvio}
-                                onChange={(e) => onChangeDivergencias(Usuario,"CheckEnvio"  , e.target.checked)}
+                                onChange={(e) => onChangeDivergencias(Usuario, "CheckEnvio", e.target.checked)}
                             />
                             <label className="switch-button" htmlFor={"CheckEnviarDivergencia_" + id}>
                                 Toggle
@@ -1633,6 +1741,7 @@ function DivergenciasUsuario({ Usuario, Divergencias, EmailCopia, Observacao, Ch
                     <table className="table table-bordered">
                         <thead>
                             <tr>
+                                <th>Número</th>
                                 <th>Emissão</th>
                                 <th>T.M.</th>
                                 <th>Filial</th>

@@ -7,7 +7,7 @@ function onSync(lastSyncDate) {
 }
 
 function createDataset(fields, constraints, sortFields) {
-    var [Operacao, Divergencia, CategoriaDivergencia, Movimentos, CancelamentoDivergencia] = ExtraiConstraints(constraints);
+    var [Operacao, Divergencia, CategoriaDivergencia, Movimentos, CancelamentoDivergencia, ID] = ExtraiConstraints(constraints);
     var myQuery = null;
 
     if (Operacao == "InsertCategoriaDivergencia") {
@@ -27,6 +27,9 @@ function createDataset(fields, constraints, sortFields) {
     }
     else if(Operacao == "CancelarDivergencia"){
         myQuery = MontaQueryCancelamentoDaDivergencia(CancelamentoDivergencia);
+    }
+    else if(Operacao == "AlteraStatusEmailParaEnviado"){
+        myQuery = MontaQueryUpdateStatusEmailParaEnviado(ID);
     }
     
     log.info("myQuery: " + myQuery)
@@ -49,6 +52,7 @@ function ExtraiConstraints(constraints) {
     var CategoriaDivergencia = null;
     var Movimentos = null;
     var CancelamentoDivergencia = null;
+    var ID = null;
 
     for (i = 0; i < constraints.length; i++) {
         if (constraints[i].fieldName == "Operacao") {
@@ -66,9 +70,12 @@ function ExtraiConstraints(constraints) {
         else if (constraints[i].fieldName == "CancelamentoDivergencia") {
             CancelamentoDivergencia = JSON.parse(constraints[i].initialValue);
         }
+        else if (constraints[i].fieldName == "ID") {
+            ID = JSON.parse(constraints[i].initialValue);
+        }
     }
 
-    return [Operacao, Divergencia, CategoriaDivergencia, Movimentos, CancelamentoDivergencia];
+    return [Operacao, Divergencia, CategoriaDivergencia, Movimentos, CancelamentoDivergencia, ID];
 }
 
 function MontaQueryInsertDivergencia(Divergencia) {
@@ -87,7 +94,7 @@ function MontaQueryInsertCategoriaDivergencia(GRUPO, DESCRICAO) {
         "INSERT INTO CATEGORIASDIVERGENCIASCONTABILIDADE\
         (GRUPO, DESCRICAO)\
         VALUES\
-        (' " + GRUPO + "', '" + DESCRICAO + "')";
+        ('" + GRUPO + "', '" + DESCRICAO + "')";
 
     return query;
 }
@@ -146,7 +153,7 @@ function MontaQueryBuscaMovimentos(Movimentos){
     
     log.info("WhereCODCOLIGADAAndIDMOV: "  + WhereCODCOLIGADAAndIDMOV)
     var myQuery = 
-    "SELECT TMOV.CODCOLIGADA, GCOLIGADA.NOME as COLIGADA, TMOV.IDMOV, GFILIAL.CODFILIAL, GFILIAL.NOME as FILIAL, FCFO.NOME as FORNECEDOR, FCFO.CGCCFO, TMOV.CODTMV, TMOV.VALORBRUTO, TMOV.DATAEMISSAO, TMOV.CODUSUARIO, TLOC.NOME as OBRA\
+    "SELECT TMOV.CODCOLIGADA, GCOLIGADA.NOME as COLIGADA, TMOV.IDMOV,  GFILIAL.CODFILIAL, GFILIAL.NOME as FILIAL, FCFO.NOME as FORNECEDOR, FCFO.CGCCFO, TMOV.NUMEROMOV, TMOV.CODTMV, TMOV.VALORBRUTO, TMOV.DATAEMISSAO, TMOV.CODUSUARIO, TLOC.NOME as OBRA\
     FROM TMOV\
         INNER JOIN GCOLIGADA ON TMOV.CODCOLIGADA = GCOLIGADA.CODCOLIGADA\
         INNER JOIN GFILIAL ON TMOV.CODCOLIGADA = GFILIAL.CODCOLIGADA AND TMOV.CODFILIAL = GFILIAL.CODFILIAL\
@@ -172,6 +179,15 @@ function MontaQueryCancelamentoDaDivergencia(CancelamentoDivergencia){
     return myQuery;
 }
 
+function MontaQueryUpdateStatusEmailParaEnviado(ID) {
+    var myQuery = 
+    "UPDATE DIVERGENCIASCONTABILIDADE\
+    SET\
+    EMAIL_PEND = 0\
+    WHERE ID = " + ID;
+
+    return myQuery;
+}
 
 function executaQueryNaCastilhoRM(query) {
     var newDataset = DatasetBuilder.newDataset(),

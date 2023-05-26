@@ -203,7 +203,7 @@ function BuscaDivergencias(Filtros) {
 			if (Movimento) {
 				Divergencia.OBS_DIVERG = JSON.parse(Divergencia.OBS_DIVERG);
 
-				const { COLIGADA, CODFILIAL, FILIAL, FORNECEDOR, CGCCFO, CODTMV, CODUSUARIO, DATAEMISSAO, VALORBRUTO, OBRA } = Movimento;
+				const { COLIGADA, CODFILIAL, FILIAL, FORNECEDOR, CGCCFO, CODTMV, CODUSUARIO, DATAEMISSAO, VALORBRUTO, OBRA, NUMEROMOV } = Movimento;
 				return {
 					...Divergencia,
 					COLIGADA,
@@ -211,6 +211,7 @@ function BuscaDivergencias(Filtros) {
 					FILIAL,
 					FORNECEDOR,
 					CGCCFO,
+					NUMEROMOV,
 					CODTMV,
 					CODUSUARIO,
 					DATAEMISSAO,
@@ -284,13 +285,132 @@ async function BuscaCategoriasDivergencia() {
 function BuscaCamposComplementaresCategoriaDivergencia(ID) {
 	var ListaCategorias = [
 		{
-			ID: 1,
+			ID: 3,
 			optFields: [
 				{ label: "Produto Lançado: ", type: "Produto" },
 				{ label: "Produto Correto: ", type: "Produto" }
 			]
+		},
+		{
+			ID:9,
+			optFields:[
+				{label:"Número Preenchido no Recibo: ", type:"Text"},
+				{label:"Número Correto: ", type:"Text"}
+			]
+		},
+		{
+			ID:10,
+			optFields:[
+				{label:"Data Preenchida no Recibo: ", type:"Date"},
+				{label:"Data Lançada no Sistema: ", type:"Date"}
+			]
+		},
+		{
+			ID:11,
+			optFields:[
+				{label:"Nome Preenchido no Recibo: ", type:"Text"},
+				{label:"Nome Correto: ", type:"Text"}
+			]
+		},
+		{
+			ID:12,
+			optFields:[
+				{label:"CPF/CNPJ Preenchido no Recibo: ", type:"CPF/CNPJ"},
+				{label:"CPF/CNPJ Lançado: ", type:"CPF/CNPJ"}
+			]
+		},
+		{
+			ID:16,
+			optFields:[
+				{label:"Valor Preenchido no Recibo: ", type:"Money"},
+				{label:"Valor Lançado: ", type:"Money"}
+			]
+		},
+		{
+			ID:23,
+			optFields:[
+				{label:"Número Lançado: ", type:"Text"},
+				{label:"Número Correto: ", type:"Text"}
+			]
+		},
+		{
+			ID:24,
+			optFields:[
+				{label:"CNPJ Lançada: ", type:"CNPJ"},
+				{label:"CNPJ Correta: ", type:"CNPJ"}
+			]
+		},
+		{
+			ID:25,
+			optFields:[
+				{label:"Emissão Lançada: ", type:"Date"},
+				{label:"Emissão Correta: ", type:"Date"}
+			]
+		},
+		{
+			ID:26,
+			optFields:[
+				{label:"Filial Lançada: ", type:"Filial"},
+				{label:"Filial Correta: ", type:"Filial"}
+			]
+		},
+		{
+			ID:27,
+			optFields:[
+				{label:"Série Lançada: ", type:"Text"},
+				{label:"Série Correta: ", type:"Text"}
+			]
+		},
+		{
+			ID:28,
+			optFields:[
+				{label:"Tipo de Movimento Lançado: ", type:"Text"},
+				{label:"Tipo de Movimento Correto: ", type:"Text"}
+			]
+		},
+		{
+			ID:30,
+			optFields:[
+				{label:"Valor do IRRF Lançado: ", type:"Money"},
+				{label:"Valor do IRRF Correto: ", type:"Money"}
+			]
+		},
+		{
+			ID:31,
+			optFields:[
+				{label:"Valor Lançado: ", type:"Money"},
+				{label:"Valor Correto: ", type:"Money"}
+			]
+		},
+		{
+			ID:32,
+			optFields:[
+				{label:"Valor do PIS/COFINS/CSLL Lançado: ", type:"Money"},
+				{label:"Valor do PIS/COFINS/CSLL Correto: ", type:"Money"}
+			]
+		},
+		{
+			ID:33,
+			optFields:[
+				{label:"Valor do INSS Lançado: ", type:"Money"},
+				{label:"Valor do INSS Correto: ", type:"Money"}
+			]
+		},
+		{
+			ID:38,
+			optFields:[
+				{label:"Valor do ISS Lançado: ", type:"Money"},
+				{label:"Valor do ISS Correto: ", type:"Money"}
+			]
+		},
+		{
+			ID:41,
+			optFields:[
+				{label:"Quantidade de Folhas Enviadas: ", type:"Text"},
+				{label:"Quantidade de Folhas Totais: ", type:"Text"}
+			]
 		}
-	]
+	];
 
 	var found = ListaCategorias.find(e => e.ID == ID);
 
@@ -360,62 +480,46 @@ function CancelaDivergencia(Divergencia, Motivo) {
 }
 
 function NotificaDivergencias(Divergencias) {
-	var Notificacoes = [];
-	for (const Divergencia of Divergencias) {
-		var found = Notificacoes.find(e => e.Usuario == Divergencia.Usuario)
-
-		if (found) {
-			found.Divergencias.push(Divergencia)
-		}
-		else {
-			Notificacoes.push({
-				Usuario: Divergencia.Usuario,
-				Divergencias: [
-					Divergencia
-				]
-			})
+	console.log(Divergencias);
 
 
-		}
-	}
+	for (const Notificacao of Divergencias) {
+		var html = "";
 
-	console.log(Notificacoes)
-	var html = "";
-	for (const Notificacao of Notificacoes) {
-		html = "";
 		html += "<div>"
 
-		html += "<p>Segue abaixo, divergências referentes ao Relatório de Compromissos Cadastrados/Fundo Fixo.</p>";
-
+		html += "<p>Segue abaixo, divergências referentes ao Relatório de Compromissos Cadastrados do usuário " + Notificacao.CODUSUARIO + ".</p>";
 		html += "<p>Favor, atenção aos lançamento das notas fiscais no sistema, por gentileza utilizar o relatório de compromissos, como uma ferramenta de conferencia diária, assim, podendo identificar o erro antes que a nota esteja quitada, da declaração ter sido entregue, os relatórios gerenciais gerados para a diretoria e o fechamento contábil.</p>";
 		html += "<p>Favor observar as divergências e a correção para a realização dos próximos lançamentos.</p><br/><br/>";
+
+		if (Notificacao.Observacao != "") {
+			html += "<p><b>Observação: </b>" + Notificacao.Observacao + "</p>";
+		}
 
 		html += "<div align='center'>"
 		html += '<table border="0" cellpadding="2" cellspacing="0" id="bodyTable" border="1">'
 		html += "<thead>"
 		html += "<tr>"
+		html += "<th>Numero</th>"
 		html += "<th>Emissão</th>"
 		html += "<th>Tipo de Movimento</th>"
 		html += "<th>Filial</th>"
 		html += "<th>Criação</th>"
 		html += "<th>Fornecedor</th>"
-		html += "<th>Usuario</th>"
 		html += "<th>Correção</th>"
 		html += "</tr>"
 		html += "</thead>"
 		html += "<tbody>"
 
-		for (const DivergenciaNotificacao of Notificacao.Divergencias) {
+		for (const Divergencia of Notificacao.Divergencias) {
 			html += "<tr>"
-
-			html += "<td>" + DivergenciaNotificacao.Emissao + "</td>"
-			html += "<td>" + DivergenciaNotificacao.TipoMovimento + "</td>"
-			html += "<td>" + DivergenciaNotificacao.Filial + "</td>"
-			html += "<td>" + DivergenciaNotificacao.Criacao + "</td>"
-			html += "<td>" + DivergenciaNotificacao.CGCCFO + "<br/>" + DivergenciaNotificacao.Fornecedor + "</td>"
-			html += "<td>" + DivergenciaNotificacao.Usuario + "</td>"
-			html += "<td>" + DivergenciaNotificacao.Divergencia.CategoriaDivergencia + "</td>"
-
+			html += "<td>" + Divergencia.NUMEROMOV + "</td>"
+			html += "<td>" + FormataDataParaDDMMYYYY(Divergencia.DATAEMISSAO.split(" ")[0]) + "</td>"
+			html += "<td>" + Divergencia.CODTMV + "</td>"
+			html += "<td>" + Divergencia.CODFILIAL + "</td>"
+			html += "<td>" + FormataDataParaDDMMYYYY(Divergencia.CREATEDON) + "</td>"
+			html += "<td>" + Divergencia.CGCCFO + "<br/>" + Divergencia.FORNECEDOR + "</td>"
+			html += "<td>" + Divergencia.CATEGORIA + "</td>"
 			html += "</tr>"
 		}
 
@@ -426,14 +530,22 @@ function NotificaDivergencias(Divergencias) {
 		html += "<br/><br/>"
 
 		html += "<p>Qualquer dúvida entrar em contato com a Contabilidade, ou acesse o <a href='#'>Painel de Divergências no Fluig</a>.</p>"
-		html += "</div>"
+		html += "</div>";
+		EnviaEmail(html, Notificacao.CODUSUARIO, Notificacao.EmailCopia);
+		AlteraStatusEmailParaEnviado(Notificacao.Divergencias);
 	}
-
-	EnviaEmail(html, DivergenciaNotificacao.Usuario);
-
 }
 
-function EnviaEmail(CorpoEmail, usuario) {
+function AlteraStatusEmailParaEnviado(Divergencias) {
+	for (const Divergencia of Divergencias) {
+		ExecutaDataset("DatasetDivergenciasContabilidade", null, [
+			DatasetFactory.createConstraint("Operacao", "AlteraStatusEmailParaEnviado", "AlteraStatusEmailParaEnviado", ConstraintType.MUST),
+			DatasetFactory.createConstraint("ID", Divergencia.ID, Divergencia.ID, ConstraintType.MUST)
+		], null);
+	}
+}
+
+function EnviaEmail(CorpoEmail, usuario, emails) {
 	//var url = 'http://fluig.castilho.com.br:1010';//Prod
 	var url = 'http://homologacao.castilho.com.br:2020';//Homolog
 
@@ -443,7 +555,7 @@ function EnviaEmail(CorpoEmail, usuario) {
 		"to": "gabriel.persike@castilho.com.br",
 		//from: "fluig@construtoracastilho.com.br", //Prod
 		from: "no-reply@construtoracastilho.com.br", //Homolog
-		"subject": "Divergências Contabilidade - " + usuario, //   subject
+		"subject": usuario + " - Divergências Contabilidade", //   subject
 		"templateId": "TPL_PADRAO_CASTILHO", // Email template Id previously registered
 		"dialectId": "pt_BR", //Email dialect , if not informed receives pt_BR , email dialect ("pt_BR", "en_US", "es")
 		"param": {
