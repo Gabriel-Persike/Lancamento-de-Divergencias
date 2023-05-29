@@ -31,7 +31,6 @@ function AppRoot() {
         };
 
         setDivergencias(await BuscaDivergencias(filtros));
-        console.log(Divergencias);
     }
 
     function handleChangeFiltro(target, value) {
@@ -76,10 +75,10 @@ function AppRoot() {
                             onChangeFiltro={(target, value) => handleChangeFiltro(target, value)}
                             onBuscaDivergencias={handleBuscaDivergencias}
                         />
-                        <ListaDivergencias Divergencias={Divergencias} />
+                        <ListaDivergencias Divergencias={Divergencias} onBuscaDivergencias={handleBuscaDivergencias} />
                     </div>
                     <div className="tab-pane" id="tabDashboards">
-                        <DashboardDivergencias />
+                        {/* <DashboardDivergencias /> */}
                     </div>
                     <div className="tab-pane" id="tabEnviarEmails">
                         <NotificarDivergencias />
@@ -133,7 +132,16 @@ class Lancamento extends React.Component {
             });
             return false;
         } else {
-            /* TODO Valida CamposCOmplementares*/
+            for (const Campo of this.state.CamposCategoriaDivergencia) {
+                if (Campo.value == "" || Campo.value == undefined) {
+                    FLUIGC.toast({
+                        title: "Campo complementar da Categoria não informado!",
+                        message: "",
+                        type: "warning"
+                    });
+                    return false;
+                }
+            }
         }
 
         //Se passou a validacao retorna true
@@ -146,6 +154,12 @@ class Lancamento extends React.Component {
             var CategoriaSelecionada = this.state.CategoriaDivergencia;
             var CamposComplementaresCategoria = this.state.CamposCategoriaDivergencia;
             var ObservacaoDivergencia = this.state.ObservacaoDivergencia;
+
+            for (const Campo of CamposComplementaresCategoria) {
+                if (Campo.type == "Date") {
+                    Campo.value = Campo.value.format("DD/MM/YYYY");
+                }
+            }
 
             var Divergencia = {
                 CODCOLIGADA: Movimento.Coligada,
@@ -364,7 +378,7 @@ class BuscadorDeMovimento extends React.Component {
                     DataCriacao: DATASAIDA,
                     NumeroMov: movimentoRM.NUMEROMOV,
                     Serie: movimentoRM.SERIE,
-                    Usuario: movimentoRM.USUARIOCRIACAO
+                    Usuario: movimentoRM.CODUSUARIO
                 };
 
                 var itensRM = retorno[1];
@@ -423,7 +437,11 @@ class BuscadorDeMovimento extends React.Component {
                     >
                         <option value=""></option>
                         {Coligadas.map((Coligada) => {
-                            return <option value={Coligada.CODCOLIGADA}>{Coligada.CODCOLIGADA + " - " + Coligada.NOME}</option>;
+                            return (
+                                <option key={Coligada.CODCOLIGADA} value={Coligada.CODCOLIGADA}>
+                                    {Coligada.CODCOLIGADA + " - " + Coligada.NOME}
+                                </option>
+                            );
                         })}
                     </select>
                     <input
@@ -486,9 +504,11 @@ function LancamentoDivergencia({ CategoriaDivergencia, onChangeCategoriaDivergen
 
     function RenderizaCamposComplementaresDaCategoriaDaDivergencia() {
         var retorno = [];
+        var i = 0;
         for (const CampoComplementar of CamposComplementaresCategoriasDeDivergencias) {
+            i++;
             retorno.push(
-                <div className="col-md-4">
+                <div className="col-md-4" key={i}>
                     <label htmlFor="">{CampoComplementar.label}</label>
                     {BuscaInputComponenteComBaseNoTipoDeInput(CampoComplementar.type, CampoComplementar.label, BuscaValorDosCamposComplementares(CampoComplementar.label))}
                 </div>
@@ -510,11 +530,13 @@ function LancamentoDivergencia({ CategoriaDivergencia, onChangeCategoriaDivergen
             return <MoneyInput onChange={(e) => handleChangeDadosCamposComplementares(label, e)} value={value} />;
         } else if (Tipo == "Date") {
             return (
-                <DateInput
+                <DatePicker
+                    format={"DD/MM/YYYY"}
                     onChange={(e) => {
                         handleChangeDadosCamposComplementares(label, e);
                     }}
                     value={value}
+                    style={{ width: "100%" }}
                 />
             );
         } else if (Tipo == "Filial") {
@@ -575,7 +597,7 @@ function LancamentoDivergencia({ CategoriaDivergencia, onChangeCategoriaDivergen
     );
 }
 
-function ListaDivergencias({ Divergencias }) {
+function ListaDivergencias({ Divergencias, onBuscaDivergencias }) {
     useEffect(() => {
         //Ao Criar o componente Inicia a DataTables
         DataTableDivergencias = $("#TableDivergencias").DataTable({
@@ -627,7 +649,11 @@ function ListaDivergencias({ Divergencias }) {
                                 "' >Detalhes</button></div>"
                             );
                         } else {
-                            return "<div style='text-align:center'><button class='btn btn-primary btnShowDetails'>Detalhes</button></div>";
+                            return (
+                                "<div style='text-align:center'><button class='btn " +
+                                (row.EMAIL_PEND == "true" ? "btn-info" : "btn-primary") +
+                                " btnShowDetails'>Detalhes</button></div>"
+                            );
                         }
                     }
                 }
@@ -673,7 +699,7 @@ function ListaDivergencias({ Divergencias }) {
         });
 
         //Toda vez que o componente for atualizado Cria a trigger on("draw") na DataTables
-        DataTableDivergencias.on("draw", () => {
+        DataTableDivergencias.on("draw", { onBuscaDivergencias: onBuscaDivergencias }, (e) => {
             FLUIGC.popover(".bs-docs-popover-hover", { trigger: "hover", placement: "auto" });
             $(".btnShowDetails").off("click");
             $(".btnShowDetails").on("click", function () {
@@ -681,7 +707,7 @@ function ListaDivergencias({ Divergencias }) {
                 var tr = $(this).closest("tr");
                 var row = DataTableDivergencias.row(tr);
                 var values = row.data();
-                AbreModalDetalhes(values);
+                AbreModalDetalhes(values, e.data.onBuscaDivergencias);
             });
         });
     }, []);
@@ -704,7 +730,7 @@ function ListaDivergencias({ Divergencias }) {
                         <th>Emissão</th>
                         <th>T.M.</th>
                         <th>Filial</th>
-                        <th>Criação</th>
+                        <th>Data Divergência</th>
                         <th>Fornecedor</th>
                         <th>Usuário</th>
                         <th>Correção</th>
@@ -824,7 +850,6 @@ function FiltroListaDivergencias({ Filtros, onChangeFiltro, onBuscaDivergencias 
                         if (!BuscandoDivergencias) {
                             setBuscandoDivergencias(true);
                             await onBuscaDivergencias();
-                            console.log("Set false");
                             setBuscandoDivergencias(false);
                         }
                     }}
@@ -907,113 +932,12 @@ class ModalDetalhes extends React.Component {
                     Itens: []
                 });
             });
-
-        /*
-                Promise.all([BuscaMovimentoRM(CODCOLIGADA, IDMOV), BuscaItensMovimentoRM(CODCOLIGADA, IDMOV)])
-                    .then((retorno) => {
-                        var movimentoRM = retorno[0];
-                        var DATASAIDA = movimentoRM.DATASAIDA;
-                        DATASAIDA = DATASAIDA.split(" ")[0].split("-").reverse().join("/");
-                        var DATAEMISSAO = movimentoRM.DATAEMISSAO;
-                        DATAEMISSAO = DATAEMISSAO.split(" ")[0].split("-").reverse().join("/");
-        
-                        var movimento = {
-                            ID: this.props.Divergencia.ID,
-                            Coligada: this.props.Divergencia.Coligada,
-                            IDMOV: this.props.Divergencia.Identificador,
-                            Filial: movimentoRM.CODFILIAL,
-                            Fornecedor: movimentoRM.FORNECEDOR,
-                            CGCCFO: movimentoRM.CGCCFO,
-                            CODTMV: movimentoRM.CODTMV,
-                            ValorTotal: movimentoRM.VALORBRUTO,
-                            DataEmissao: DATAEMISSAO,
-                            DataCriacao: DATASAIDA,
-                            NumeroMov: movimentoRM.NUMEROMOV,
-                            Serie: movimentoRM.SERIE,
-                            Usuario: movimentoRM.USUARIOCRIACAO
-                        };
-        
-                        var itensRM = retorno[1];
-                        var itens = [];
-                        for (const item of itensRM) {
-                            itens.push({
-                                Produto: item.PRODUTO,
-                                CodigoProduto: item.CODIGOPRODUTO,
-                                Quantidade: item.QUANTIDADE,
-                                CODUND: item.CODUND,
-                                ValorUnit: item.VALORUNITARIO
-                            });
-                        }
-        
-                        this.setState(
-                            {
-                                Movimento: movimento,
-                                Itens: itens
-                            },
-                            () => {
-                                FLUIGC.toast({
-                                    title: "Erro ao Buscar Movimento!",
-                                    message: "",
-                                    type: "warning"
-                                });
-                                console.log(e);
-                
-                                var movimento = {
-                                    Coligada: "",
-                                    IDMOV: "",
-                                    Filial: "",
-                                    Fornecedor: "",
-                                    CGCCFO: "",
-                                    CODTMV: "",
-                                    ValorTotal: "",
-                                    DataEmissao: "",
-                                    DataCriacao: "",
-                                    NumeroMov: "",
-                                    Serie: "",
-                                    Usuario: ""
-                                };
-                
-                                var itens = [];
-                            }
-                        );
-                        //this.props.onBuscaMovimento(movimento, itens);
-                    })
-                    .catch((e) => {
-                        FLUIGC.toast({
-                            title: "Erro ao Buscar Movimento!",
-                            message: "",
-                            type: "warning"
-                        });
-                        console.log(e);
-        
-                        var movimento = {
-                            Coligada: "",
-                            IDMOV: "",
-                            Filial: "",
-                            Fornecedor: "",
-                            CGCCFO: "",
-                            CODTMV: "",
-                            ValorTotal: "",
-                            DataEmissao: "",
-                            DataCriacao: "",
-                            NumeroMov: "",
-                            Serie: "",
-                            Usuario: ""
-                        };
-        
-                        var itens = [];
-        
-                        this.setState({
-                            Movimento: movimento,
-                            Itens: itens
-                        });
-                        //this.props.onBuscaMovimento(movimento, itens);
-                    });*/
     }
 
-    handleCancelaDivergencia() {
+    async handleCancelaDivergencia() {
         if (this.state.MotivoCancelamento) {
-            CancelaDivergencia(this.props.Divergencia, this.state.MotivoCancelamento);
+            await CancelaDivergencia(this.props.Divergencia, this.state.MotivoCancelamento);
+            this.props.onBuscaDivergencias();
             myModal.remove();
         } else {
             FLUIGC.toast({
@@ -1054,32 +978,27 @@ class ModalDetalhes extends React.Component {
         var list = [];
         var optFields = this.props.Divergencia.OBS_DIVERG.CamposComplementaresCategoria;
         for (const CampoComplementar of optFields) {
-
             if (CampoComplementar.type == "Money") {
                 list.push(
-                    <div className="col-md-4">
+                    <div className="col-md-4" key={CampoComplementar.label}>
                         <b>{CampoComplementar.label}: </b>
-                        <MoneySpan value={CampoComplementar.value}/>
+                        <MoneySpan value={CampoComplementar.value} />
                     </div>
                 );
-            }
-            else{
+            } else {
                 list.push(
-                    <div className="col-md-4">
+                    <div className="col-md-4" key={CampoComplementar.label}>
                         <b>{CampoComplementar.label}: </b>
                         <span>{CampoComplementar.value}</span>
                     </div>
                 );
             }
-
-          
         }
 
         return list;
     }
 
     render() {
-        console.log(this.props.Divergencia);
         return (
             <div>
                 <Panel Title="Lançamento">
@@ -1160,7 +1079,7 @@ class ModalDetalhes extends React.Component {
                 <Panel Title="Divergência">
                     <div>
                         <h3>Divergência: {this.props.Divergencia.CATEGORIA}</h3>
-                        <b>Data de Criação: </b> <span>{FormataDataParaDDMMYYYY(this.props.Divergencia.CREATEDON)}</span>
+                        <b>Data da Divergência: </b> <span>{FormataDataParaDDMMYYYY(this.props.Divergencia.CREATEDON)}</span>
                     </div>
                     <div className="row">{this.renderOptFieldsCategoria()}</div>
                     <br />
@@ -1205,9 +1124,7 @@ function Item({ ItemIndex, CodigoProduto, Produto, Quantidade, ValorUnit, CODUND
             <td>
                 <span>{CodigoProduto + " - " + Produto}</span>
             </td>
-            <td>
-               {Quantidade + " " + CODUND}
-            </td>
+            <td>{Quantidade + " " + CODUND}</td>
             <td>
                 <MoneySpan value={ValorUnit} QuantidadeDeCasasDecimais={4} />
             </td>
@@ -1290,10 +1207,66 @@ function DashboardDivergencias() {
     return <div id="pieChart"></div>;
 }
 
-class CPFCNPJInput extends React.Component {
-    handleChange(value) {
-        value = value.replace(/\D/g, "");
-        value = value.split("");
+function CPFCNPJInput({ value, type = "CPF/CNPJ", onChange }) {
+    function handleChange(e) {
+        var valor = e.target.value;
+        valor = valor.replace(/\D/g, "");
+        valor = valor.split("");
+
+        if (valor.length <= 11) {
+            valor = maskCPF(valor);
+        } else {
+            valor = maskCNPJ(valor);
+        }
+
+        onChange(valor);
+    }
+
+    function handleBlur(e) {
+        var valor = e.target.value;
+        valor = valor.replace(/\D/g, "");
+        valor = valor.split("");
+
+        if (valor.length < 11) {
+            if (!validaCPF(maskCPF(valor))) {
+                FLUIGC.toast({
+                    title: "CPF Inválido!",
+                    message: "",
+                    type: "warning"
+                });
+                onChange("");
+            } else {
+                if (!validarCNPJ(maskCNPJ(valor))) {
+                    FLUIGC.toast({
+                        title: "CNPJ Inválido!",
+                        message: "",
+                        type: "warning"
+                    });
+                    onChange("");
+                }
+            }
+        }
+    }
+
+    function maskCPF(value) {
+        var formatValue = "";
+        //098.560.269-46
+        //012 345 678 910
+        for (const [i, char] of value.entries()) {
+            if (i == 3 || i == 6) {
+                formatValue += ".";
+            } else if (i == 9) {
+                formatValue += "-";
+            }
+
+            if (i < 11) {
+                formatValue += char;
+            }
+        }
+
+        return formatValue;
+    }
+    function maskCNPJ(value) {
         var formatValue = "";
         for (const [i, char] of value.entries()) {
             if (i == 2 || i == 5) {
@@ -1309,31 +1282,10 @@ class CPFCNPJInput extends React.Component {
             }
         }
 
-        this.props.onChange(formatValue);
+        return formatValue;
     }
 
-    handleBlur(valor) {
-        if (!validarCNPJ(valor)) {
-            FLUIGC.toast({
-                title: "CNPJ Inválido!",
-                message: "",
-                type: "warning"
-            });
-            this.props.onChange("");
-        }
-    }
-
-    render() {
-        return (
-            <input
-                type="text"
-                className="form-control"
-                value={this.props.value}
-                onChange={(e) => this.handleChange(e.target.value)}
-                onBlur={(e) => this.handleBlur(e.target.value)}
-            />
-        );
-    }
+    return <input type="text" className="form-control" value={value} onChange={handleChange} onBlur={handleBlur} />;
 }
 
 class ProdutoInput extends React.Component {
@@ -1420,11 +1372,10 @@ function MoneySpan({ value, QuantidadeDeCasasDecimais = 2 }) {
             valor = parseFloat(valor);
         }
 
-
         return valor.toLocaleString("pt-br", {
-                minimumFractionDigits: QuantidadeDeCasasDecimais,
-                maximumFractionDigits: QuantidadeDeCasasDecimais
-            });
+            minimumFractionDigits: QuantidadeDeCasasDecimais,
+            maximumFractionDigits: QuantidadeDeCasasDecimais
+        });
     }
 
     return (
@@ -1450,7 +1401,29 @@ function MoneyInput({ value, onChange, QuantidadeDeCasasDecimais = 2, className,
 
     function unformatValue(value) {
         value = value.split(".").join("").split(",");
-        return value[0].replace(/[^0-9]/g, "") + (value[1] != undefined ? "." + value[1].replace(/[^0-9]/g, "") : "");
+        var inteiros = removeNaoNumericos(value[0]);
+        var decimais = value[1];
+
+        if (!inteiros && !decimais) {
+            return "";
+        } else {
+            if (decimais != undefined) {
+                decimais = "." + removeNaoNumericos(decimais);
+            } else {
+                decimais = "";
+            }
+
+            value = inteiros + decimais;
+            return value;
+        }
+    }
+
+    function removeNaoNumericos(value) {
+        if (value != undefined && value != null) {
+            return value.replace(/[^0-9]/g, "");
+        } else {
+            return false;
+        }
     }
 
     function handleChange(e) {
@@ -1458,36 +1431,26 @@ function MoneyInput({ value, onChange, QuantidadeDeCasasDecimais = 2, className,
     }
 
     function handleBlur(e) {
-        var value = e.target.value;
-        if (value.split(",").length > 1) {
-            value = value.split(",");
-            onChange(
-                value[0]
-                    .split(".")
-                    .join("")
-                    .replace(/[^0-9]/g, "") +
-                    "." +
-                    (value[1].replace(/[^0-9]/g, "") + "0000000000").substring(0, QuantidadeDeCasasDecimais)
-            );
+        var value = e.target.value.split(",");
+        var inteiros = removeNaoNumericos(value[0]);
+        var decimais = removeNaoNumericos(value[1]);
+
+        if (!inteiros && !decimais) {
+            onChange("");
         } else {
-            value = value.replace(/[^0-9]/g, "");
-            onChange(value == "" ? "0" : value) + "." + "000000000".substring(0, QuantidadeDeCasasDecimais);
+            if (decimais != false) {
+                decimais = (decimais + "0000000000").substring(0, QuantidadeDeCasasDecimais);
+            } else {
+                decimais = "0000000000".substring(0, QuantidadeDeCasasDecimais);
+            }
+            value = inteiros + "." + decimais;
+
+            onChange(value);
         }
     }
 
-    function handleFocus(e) {}
-
     return (
-        <input
-            type="text"
-            value={formatValue(value)}
-            className={"form-control " + className}
-            readOnly={readOnly}
-            placeholder="R$"
-            onChange={handleChange}
-            onBlur={handleBlur}
-            onFocus={handleFocus}
-        />
+        <input type="text" value={formatValue(value)} className={"form-control " + className} readOnly={readOnly} placeholder="R$" onChange={handleChange} onBlur={handleBlur} />
     );
 }
 
@@ -1558,7 +1521,6 @@ function NotificarDivergencias() {
 
         var Divergencias = await BuscaDivergencias(filtros);
         Divergencias = await AgrupaDivergenciasPorUsuario(Divergencias);
-        console.log(Divergencias);
         setDivergencias(Divergencias);
 
         async function AgrupaDivergenciasPorUsuario(Divergencias) {
@@ -1627,7 +1589,7 @@ function NotificarDivergencias() {
         });
     }
 
-    function DisparaDivergencias() {
+    async function DisparaDivergencias() {
         var list = [];
 
         for (const Divergencia of Divergencias) {
@@ -1636,7 +1598,7 @@ function NotificarDivergencias() {
             }
         }
 
-        NotificaDivergencias(list);
+        await NotificaDivergencias(list);
         handleBuscaDivergencias();
     }
 
@@ -1646,6 +1608,7 @@ function NotificarDivergencias() {
         for (const Divergencia of Divergencias) {
             lista.push(
                 <DivergenciasUsuario
+                    key={Divergencia.ID}
                     Usuario={Divergencia.CODUSUARIO}
                     Divergencias={Divergencia.Divergencias}
                     EmailCopia={Divergencia.EmailCopia}
@@ -1677,24 +1640,84 @@ function DivergenciasUsuario({ Usuario, Divergencias, EmailCopia, Observacao, Ch
     var id = makeid(6);
 
     function renderizaDivergencias() {
-        var rows = [];
-
+        var DivergenciasAtivas = [];
+        var DivergenciasCanceladas = [];
+        var i = 0;
         for (const Divergencia of Divergencias) {
-            rows.push(
-                <tr>
-                    <td>{Divergencia.NUMEROMOV}</td>
-                    <td>{FormataDataParaDDMMYYYY(Divergencia.DATAEMISSAO)}</td>
-                    <td>{Divergencia.CODTMV}</td>
-                    <td>{Divergencia.CODFILIAL}</td>
-                    <td>{FormataDataParaDDMMYYYY(Divergencia.CREATEDON)}</td>
-                    <td>
-                        {Divergencia.CGCCFO} <br /> {Divergencia.FORNECEDOR}
-                    </td>
-                    <td>{Divergencia.CATEGORIA}</td>
-                </tr>
-            );
+            i++;
+            if (Divergencia.STATUS == "true") {
+                DivergenciasAtivas.push(
+                    <tr key={i}>
+                        <td>{Divergencia.NUMEROMOV}</td>
+                        <td>{FormataDataParaDDMMYYYY(Divergencia.DATAEMISSAO)}</td>
+                        <td>{Divergencia.CODTMV}</td>
+                        <td>{Divergencia.CODFILIAL}</td>
+                        <td>{FormataDataParaDDMMYYYY(Divergencia.CREATEDON)}</td>
+                        <td>
+                            {Divergencia.CGCCFO} <br /> {Divergencia.FORNECEDOR}
+                        </td>
+                        <td>{Divergencia.CATEGORIA}</td>
+                    </tr>
+                );
+            } else {
+                DivergenciasCanceladas.push(
+                    <tr key={i}>
+                        <td>{Divergencia.NUMEROMOV}</td>
+                        <td>{FormataDataParaDDMMYYYY(Divergencia.DATAEMISSAO)}</td>
+                        <td>{Divergencia.CODTMV}</td>
+                        <td>{Divergencia.CODFILIAL}</td>
+                        <td>{FormataDataParaDDMMYYYY(Divergencia.CREATEDON)}</td>
+                        <td>
+                            {Divergencia.CGCCFO} <br /> {Divergencia.FORNECEDOR}
+                        </td>
+                        <td>{Divergencia.CATEGORIA}</td>
+                    </tr>
+                );
+            }
         }
-        return rows;
+
+        return (
+            <>
+                {DivergenciasAtivas.length > 0 && (
+                    <div>
+                        <h3>Divergências</h3>
+                        <table className="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Emissão</th>
+                                    <th>T.M.</th>
+                                    <th>Filial</th>
+                                    <th>Data Divergência</th>
+                                    <th>Fornecedor</th>
+                                    <th>Divergência</th>
+                                </tr>
+                            </thead>
+                            <tbody>{DivergenciasAtivas}</tbody>
+                        </table>
+                    </div>
+                )}
+                {DivergenciasCanceladas.length > 0 && (
+                    <div>
+                        <h3>Divergências Canceladas</h3>
+                        <table className="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Emissão</th>
+                                    <th>T.M.</th>
+                                    <th>Filial</th>
+                                    <th>Data Divergência</th>
+                                    <th>Fornecedor</th>
+                                    <th>Divergência</th>
+                                </tr>
+                            </thead>
+                            <tbody>{DivergenciasCanceladas}</tbody>
+                        </table>
+                    </div>
+                )}
+            </>
+        );
     }
 
     return (
@@ -1738,20 +1761,7 @@ function DivergenciasUsuario({ Usuario, Divergencias, EmailCopia, Observacao, Ch
                         </div>
                     </div>
                     <br />
-                    <table className="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Número</th>
-                                <th>Emissão</th>
-                                <th>T.M.</th>
-                                <th>Filial</th>
-                                <th>Criação</th>
-                                <th>Fornecedor</th>
-                                <th>Divergência</th>
-                            </tr>
-                        </thead>
-                        <tbody>{renderizaDivergencias()}</tbody>
-                    </table>
+                    <div>{renderizaDivergencias()}</div>
                     <br />
                     <div className="row">
                         <div className="col-md-12">

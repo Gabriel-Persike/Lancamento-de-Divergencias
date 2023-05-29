@@ -230,8 +230,6 @@ function BuscaDivergencias(Filtros) {
 	}
 
 	function AplicaFiltroNasDivergencias(Divergencias, Filtros) {
-		console.log(Filtros)
-
 		return Divergencias.filter(Divergencia => {
 			if (ValidaFiltros(Divergencia, Filtros)) {
 				return true;
@@ -292,122 +290,122 @@ function BuscaCamposComplementaresCategoriaDivergencia(ID) {
 			]
 		},
 		{
-			ID:9,
-			optFields:[
-				{label:"Número Preenchido no Recibo: ", type:"Text"},
-				{label:"Número Correto: ", type:"Text"}
+			ID: 9,
+			optFields: [
+				{ label: "Número Preenchido no Recibo: ", type: "Text" },
+				{ label: "Número Correto: ", type: "Text" }
 			]
 		},
 		{
-			ID:10,
-			optFields:[
-				{label:"Data Preenchida no Recibo: ", type:"Date"},
-				{label:"Data Lançada no Sistema: ", type:"Date"}
+			ID: 10,
+			optFields: [
+				{ label: "Data Preenchida no Recibo: ", type: "Date" },
+				{ label: "Data Lançada no Sistema: ", type: "Date" }
 			]
 		},
 		{
-			ID:11,
-			optFields:[
-				{label:"Nome Preenchido no Recibo: ", type:"Text"},
-				{label:"Nome Correto: ", type:"Text"}
+			ID: 11,
+			optFields: [
+				{ label: "Nome Preenchido no Recibo: ", type: "Text" },
+				{ label: "Nome Correto: ", type: "Text" }
 			]
 		},
 		{
-			ID:12,
-			optFields:[
-				{label:"CPF/CNPJ Preenchido no Recibo: ", type:"CPF/CNPJ"},
-				{label:"CPF/CNPJ Lançado: ", type:"CPF/CNPJ"}
+			ID: 12,
+			optFields: [
+				{ label: "CPF/CNPJ Preenchido no Recibo: ", type: "CPF/CNPJ" },
+				{ label: "CPF/CNPJ Lançado: ", type: "CPF/CNPJ" }
 			]
 		},
 		{
-			ID:16,
-			optFields:[
-				{label:"Valor Preenchido no Recibo: ", type:"Money"},
-				{label:"Valor Lançado: ", type:"Money"}
+			ID: 16,
+			optFields: [
+				{ label: "Valor Preenchido no Recibo: ", type: "Money" },
+				{ label: "Valor Lançado: ", type: "Money" }
 			]
 		},
 		{
-			ID:23,
-			optFields:[
-				{label:"Número Lançado: ", type:"Text"},
-				{label:"Número Correto: ", type:"Text"}
+			ID: 23,
+			optFields: [
+				{ label: "Número Lançado: ", type: "Text" },
+				{ label: "Número Correto: ", type: "Text" }
 			]
 		},
 		{
-			ID:24,
-			optFields:[
-				{label:"CNPJ Lançada: ", type:"CNPJ"},
-				{label:"CNPJ Correta: ", type:"CNPJ"}
+			ID: 24,
+			optFields: [
+				{ label: "CNPJ Lançada: ", type: "CNPJ" },
+				{ label: "CNPJ Correta: ", type: "CNPJ" }
 			]
 		},
 		{
-			ID:25,
-			optFields:[
-				{label:"Emissão Lançada: ", type:"Date"},
-				{label:"Emissão Correta: ", type:"Date"}
+			ID: 25,
+			optFields: [
+				{ label: "Emissão Lançada: ", type: "Date" },
+				{ label: "Emissão Correta: ", type: "Date" }
 			]
 		},
 		{
-			ID:26,
-			optFields:[
-				{label:"Filial Lançada: ", type:"Filial"},
-				{label:"Filial Correta: ", type:"Filial"}
+			ID: 26,
+			optFields: [
+				{ label: "Filial Lançada: ", type: "Filial" },
+				{ label: "Filial Correta: ", type: "Filial" }
 			]
 		},
 		{
-			ID:27,
-			optFields:[
-				{label:"Série Lançada: ", type:"Text"},
-				{label:"Série Correta: ", type:"Text"}
+			ID: 27,
+			optFields: [
+				{ label: "Série Lançada: ", type: "Text" },
+				{ label: "Série Correta: ", type: "Text" }
 			]
 		},
 		{
-			ID:28,
-			optFields:[
-				{label:"Tipo de Movimento Lançado: ", type:"Text"},
-				{label:"Tipo de Movimento Correto: ", type:"Text"}
+			ID: 28,
+			optFields: [
+				{ label: "Tipo de Movimento Lançado: ", type: "Text" },
+				{ label: "Tipo de Movimento Correto: ", type: "Text" }
 			]
 		},
 		{
-			ID:30,
-			optFields:[
-				{label:"Valor do IRRF Lançado: ", type:"Money"},
-				{label:"Valor do IRRF Correto: ", type:"Money"}
+			ID: 30,
+			optFields: [
+				{ label: "Valor do IRRF Lançado: ", type: "Money" },
+				{ label: "Valor do IRRF Correto: ", type: "Money" }
 			]
 		},
 		{
-			ID:31,
-			optFields:[
-				{label:"Valor Lançado: ", type:"Money"},
-				{label:"Valor Correto: ", type:"Money"}
+			ID: 31,
+			optFields: [
+				{ label: "Valor Lançado: ", type: "Money" },
+				{ label: "Valor Correto: ", type: "Money" }
 			]
 		},
 		{
-			ID:32,
-			optFields:[
-				{label:"Valor do PIS/COFINS/CSLL Lançado: ", type:"Money"},
-				{label:"Valor do PIS/COFINS/CSLL Correto: ", type:"Money"}
+			ID: 32,
+			optFields: [
+				{ label: "Valor do PIS/COFINS/CSLL Lançado: ", type: "Money" },
+				{ label: "Valor do PIS/COFINS/CSLL Correto: ", type: "Money" }
 			]
 		},
 		{
-			ID:33,
-			optFields:[
-				{label:"Valor do INSS Lançado: ", type:"Money"},
-				{label:"Valor do INSS Correto: ", type:"Money"}
+			ID: 33,
+			optFields: [
+				{ label: "Valor do INSS Lançado: ", type: "Money" },
+				{ label: "Valor do INSS Correto: ", type: "Money" }
 			]
 		},
 		{
-			ID:38,
-			optFields:[
-				{label:"Valor do ISS Lançado: ", type:"Money"},
-				{label:"Valor do ISS Correto: ", type:"Money"}
+			ID: 38,
+			optFields: [
+				{ label: "Valor do ISS Lançado: ", type: "Money" },
+				{ label: "Valor do ISS Correto: ", type: "Money" }
 			]
 		},
 		{
-			ID:41,
-			optFields:[
-				{label:"Quantidade de Folhas Enviadas: ", type:"Text"},
-				{label:"Quantidade de Folhas Totais: ", type:"Text"}
+			ID: 41,
+			optFields: [
+				{ label: "Quantidade de Folhas Enviadas: ", type: "Text" },
+				{ label: "Quantidade de Folhas Totais: ", type: "Text" }
 			]
 		}
 	];
@@ -427,7 +425,6 @@ function CriaGrupoDivergencias(GRUPO, DESCRICAO) {
 		DatasetFactory.createConstraint("Operacao", "InsertCategoriaDivergencia", "InsertCategoriaDivergencia", ConstraintType.MUST),
 		DatasetFactory.createConstraint("CategoriaDivergencia", JSON.stringify({ GRUPO: GRUPO, DESCRICAO: DESCRICAO }), JSON.stringify({ GRUPO: GRUPO, DESCRICAO: DESCRICAO }), ConstraintType.MUST),
 	], null)
-	console.log(ds)
 }
 
 function CriaDivergencia(Divergencia) {
@@ -454,7 +451,7 @@ function CriaDivergencia(Divergencia) {
 	});
 }
 
-function CancelaDivergencia(Divergencia, Motivo) {
+async function CancelaDivergencia(Divergencia, Motivo) {
 	var EMAIL_PEND = Divergencia.EMAIL_PEND;
 	if (EMAIL_PEND == "true") {
 		//Se o Email estava pendende, então significa que o usuário ainda não foi notificado da Divergencia, por isso não é necessário notificar o cancelamento
@@ -473,22 +470,42 @@ function CancelaDivergencia(Divergencia, Motivo) {
 		MODIFIEDBY: WCMAPI.userCode
 	}
 
-	ExecutaDataset("DatasetDivergenciasContabilidade", null, [
+	await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
 		DatasetFactory.createConstraint("Operacao", "CancelarDivergencia", "CancelarDivergencia", ConstraintType.MUST),
 		DatasetFactory.createConstraint("CancelamentoDivergencia", JSON.stringify(CancelamentoDivergencia), JSON.stringify(CancelamentoDivergencia), ConstraintType.MUST)
 	], null);
 }
 
-function NotificaDivergencias(Divergencias) {
-	console.log(Divergencias);
-
-
+async function NotificaDivergencias(Divergencias) {
 	for (const Notificacao of Divergencias) {
+		var DivegenciasAtivas = "";
+		var DivegenciasCanceladas = "";
+
+		for (const Divergencia of Notificacao.Divergencias) {
+			var row = ""
+			row += "<tr>"
+			row += "<td>" + Divergencia.NUMEROMOV + "</td>"
+			row += "<td>" + FormataDataParaDDMMYYYY(Divergencia.DATAEMISSAO.split(" ")[0]) + "</td>"
+			row += "<td>" + Divergencia.CODTMV + "</td>"
+			row += "<td>" + Divergencia.CODFILIAL + "</td>"
+			row += "<td>" + FormataDataParaDDMMYYYY(Divergencia.CREATEDON) + "</td>"
+			row += "<td>" + Divergencia.CGCCFO + "<br/>" + Divergencia.FORNECEDOR + "</td>"
+			row += "<td>" + Divergencia.CATEGORIA + "</td>"
+			row += "</tr>"
+
+			if (Divergencia.STATUS == "true") {
+				DivegenciasAtivas += row;
+			}
+			else {
+				DivegenciasCanceladas += row;
+			}
+		}
+
 		var html = "";
 
 		html += "<div>"
 
-		html += "<p>Segue abaixo, divergências referentes ao Relatório de Compromissos Cadastrados do usuário " + Notificacao.CODUSUARIO + ".</p>";
+		html += "<p>Segue abaixo, divergências referentes ao Relatório de Compromissos Cadastrados do usuário <b>" + Notificacao.CODUSUARIO + "</b>.</p>";
 		html += "<p>Favor, atenção aos lançamento das notas fiscais no sistema, por gentileza utilizar o relatório de compromissos, como uma ferramenta de conferencia diária, assim, podendo identificar o erro antes que a nota esteja quitada, da declaração ter sido entregue, os relatórios gerenciais gerados para a diretoria e o fechamento contábil.</p>";
 		html += "<p>Favor observar as divergências e a correção para a realização dos próximos lançamentos.</p><br/><br/>";
 
@@ -496,49 +513,65 @@ function NotificaDivergencias(Divergencias) {
 			html += "<p><b>Observação: </b>" + Notificacao.Observacao + "</p>";
 		}
 
-		html += "<div align='center'>"
-		html += '<table border="0" cellpadding="2" cellspacing="0" id="bodyTable" border="1">'
-		html += "<thead>"
-		html += "<tr>"
-		html += "<th>Numero</th>"
-		html += "<th>Emissão</th>"
-		html += "<th>Tipo de Movimento</th>"
-		html += "<th>Filial</th>"
-		html += "<th>Criação</th>"
-		html += "<th>Fornecedor</th>"
-		html += "<th>Correção</th>"
-		html += "</tr>"
-		html += "</thead>"
-		html += "<tbody>"
-
-		for (const Divergencia of Notificacao.Divergencias) {
+		if (DivegenciasAtivas.length > 0) {
+			html += "<h3>Divergências</h3>"
+			html += "<div align='center'>"
+			html += '<table border="0" cellpadding="2" cellspacing="0" id="bodyTable" border="1" width="100%">'
+			html += "<thead>"
 			html += "<tr>"
-			html += "<td>" + Divergencia.NUMEROMOV + "</td>"
-			html += "<td>" + FormataDataParaDDMMYYYY(Divergencia.DATAEMISSAO.split(" ")[0]) + "</td>"
-			html += "<td>" + Divergencia.CODTMV + "</td>"
-			html += "<td>" + Divergencia.CODFILIAL + "</td>"
-			html += "<td>" + FormataDataParaDDMMYYYY(Divergencia.CREATEDON) + "</td>"
-			html += "<td>" + Divergencia.CGCCFO + "<br/>" + Divergencia.FORNECEDOR + "</td>"
-			html += "<td>" + Divergencia.CATEGORIA + "</td>"
+			html += "<th>Numero</th>"
+			html += "<th>Emissão</th>"
+			html += "<th>Tipo de Movimento</th>"
+			html += "<th>Filial</th>"
+			html += "<th>Data Divergência</th>"
+			html += "<th>Fornecedor</th>"
+			html += "<th>Correção</th>"
 			html += "</tr>"
+			html += "</thead>"
+			html += "<tbody>"
+				html+= DivegenciasAtivas;
+			html += "</tbody>"
+			html += "</table>"
+			html += "</div>"
+			html += "<br/><br/>"
+
 		}
 
+		if (DivegenciasCanceladas.length > 0) {
+			html += "<h3>Divergências Canceladas</h3>"
+			html += "<div align='center'>"
+			html += '<table border="0" cellpadding="2" cellspacing="0" id="bodyTable" border="1" width="100%">'
+			html += "<thead>"
+			html += "<tr>"
+			html += "<th>Numero</th>"
+			html += "<th>Emissão</th>"
+			html += "<th>Tipo de Movimento</th>"
+			html += "<th>Filial</th>"
+			html += "<th>Data Divergência</th>"
+			html += "<th>Fornecedor</th>"
+			html += "<th>Correção</th>"
+			html += "</tr>"
+			html += "</thead>"
+			html += "<tbody>"
+				html+= DivegenciasCanceladas;
+			html += "</tbody>"
+			html += "</table>"
+			html += "</div>"
+			html += "<br/><br/>"
 
-		html += "</tbody>"
-		html += "</table>"
-		html += "</div>"
-		html += "<br/><br/>"
+		}
 
-		html += "<p>Qualquer dúvida entrar em contato com a Contabilidade, ou acesse o <a href='#'>Painel de Divergências no Fluig</a>.</p>"
+		html += "<p>Qualquer dúvida entrar em contato com a Contabilidade.</p>"
+		// html += "<p>Qualquer dúvida entrar em contato com a Contabilidade, ou acesse o <a href='#'>Painel de Divergências no Fluig</a>.</p>"
 		html += "</div>";
-		EnviaEmail(html, Notificacao.CODUSUARIO, Notificacao.EmailCopia);
-		AlteraStatusEmailParaEnviado(Notificacao.Divergencias);
+		await EnviaEmail(html, Notificacao.CODUSUARIO, Notificacao.EmailCopia);
+		await AlteraStatusEmailParaEnviado(Notificacao.Divergencias);
 	}
 }
 
-function AlteraStatusEmailParaEnviado(Divergencias) {
+async function AlteraStatusEmailParaEnviado(Divergencias) {
 	for (const Divergencia of Divergencias) {
-		ExecutaDataset("DatasetDivergenciasContabilidade", null, [
+		await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
 			DatasetFactory.createConstraint("Operacao", "AlteraStatusEmailParaEnviado", "AlteraStatusEmailParaEnviado", ConstraintType.MUST),
 			DatasetFactory.createConstraint("ID", Divergencia.ID, Divergencia.ID, ConstraintType.MUST)
 		], null);
@@ -546,12 +579,13 @@ function AlteraStatusEmailParaEnviado(Divergencias) {
 }
 
 function EnviaEmail(CorpoEmail, usuario, emails) {
+	return new Promise((resolve, reject)=>{
 	//var url = 'http://fluig.castilho.com.br:1010';//Prod
 	var url = 'http://homologacao.castilho.com.br:2020';//Homolog
 
 
 	var data = {
-		//"to": "",
+		//"to": emails,
 		"to": "gabriel.persike@castilho.com.br",
 		//from: "fluig@construtoracastilho.com.br", //Prod
 		from: "no-reply@construtoracastilho.com.br", //Homolog
@@ -577,6 +611,7 @@ function EnviaEmail(CorpoEmail, usuario, emails) {
 				message: "",
 				type: "warning"
 			});
+			resolve();
 		})
 		.fail(function (jqXHR, textStatus, errorThrown) {
 			FLUIGC.toast({
@@ -585,13 +620,13 @@ function EnviaEmail(CorpoEmail, usuario, emails) {
 			});
 			//Falha
 		});
+
+	})
+
 }
 
-function AbreModalDetalhes(Divergencia) {
+function AbreModalDetalhes(Divergencia, onBuscaDivergencias) {
 	//Abre a Modal
-	console.log(Divergencia);
-
-
 	var actions = [];
 	if (Divergencia.STATUS != "false") {
 		actions.push({
@@ -605,7 +640,6 @@ function AbreModalDetalhes(Divergencia) {
 		'autoClose': true
 	});
 
-
 	myModal = FLUIGC.modal({
 		title: 'Divergência',
 		content: '<div id="rootModalDetalhes"></div>',
@@ -616,7 +650,7 @@ function AbreModalDetalhes(Divergencia) {
 		if (err) {
 		} else {
 			//Apos criar a Modal inicia o <ModalDetalhes/> dentro da Modal
-			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia }), document.querySelector("#rootModalDetalhes"));
+			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia,onBuscaDivergencias:onBuscaDivergencias }), document.querySelector("#rootModalDetalhes"));
 		}
 	});
 }
