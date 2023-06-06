@@ -4,6 +4,8 @@ Departamentos = [];
 Filiais = [];
 myModal = null;
 DataTableDivergencias = null;
+var LoadingEnvioDeEmail = FLUIGC.loading(window);
+
 
 function BuscaColigadas() {
 	//Joga as coligadas na variavel Global Coligadas
@@ -175,6 +177,7 @@ function BuscaDivergencias(Filtros) {
 			var Movimentos = await BuscaMovimentosDasDivergencias(Divergencias);
 			Divergencias = InsereNasDivergenciasAsInformacoesDoMovimento(Divergencias, Movimentos);
 			Divergencias = AplicaFiltroNasDivergencias(Divergencias, Filtros);
+			console.log(Divergencias)
 			resolve(Divergencias);
 		} catch (error) {
 			console.error(error);
@@ -283,126 +286,126 @@ async function BuscaCategoriasDivergencia() {
 function BuscaCamposComplementaresCategoriaDivergencia(ID) {
 	var ListaCategorias = [
 		{
-			ID: 3,
+			ID: 1,
 			optFields: [
 				{ label: "Produto Lançado: ", type: "Produto" },
 				{ label: "Produto Correto: ", type: "Produto" }
 			]
 		},
 		{
-			ID: 9,
+			ID: 7,
 			optFields: [
 				{ label: "Número Preenchido no Recibo: ", type: "Text" },
 				{ label: "Número Correto: ", type: "Text" }
 			]
 		},
 		{
-			ID: 10,
+			ID: 8,
 			optFields: [
 				{ label: "Data Preenchida no Recibo: ", type: "Date" },
 				{ label: "Data Lançada no Sistema: ", type: "Date" }
 			]
 		},
 		{
-			ID: 11,
+			ID: 9,
 			optFields: [
 				{ label: "Nome Preenchido no Recibo: ", type: "Text" },
 				{ label: "Nome Correto: ", type: "Text" }
 			]
 		},
 		{
-			ID: 12,
+			ID: 10,
 			optFields: [
 				{ label: "CPF/CNPJ Preenchido no Recibo: ", type: "CPF/CNPJ" },
 				{ label: "CPF/CNPJ Lançado: ", type: "CPF/CNPJ" }
 			]
 		},
 		{
-			ID: 16,
+			ID: 14,
 			optFields: [
 				{ label: "Valor Preenchido no Recibo: ", type: "Money" },
 				{ label: "Valor Lançado: ", type: "Money" }
 			]
 		},
 		{
-			ID: 23,
+			ID: 21,
 			optFields: [
 				{ label: "Número Lançado: ", type: "Text" },
 				{ label: "Número Correto: ", type: "Text" }
 			]
 		},
 		{
-			ID: 24,
+			ID: 22,
 			optFields: [
 				{ label: "CNPJ Lançada: ", type: "CNPJ" },
 				{ label: "CNPJ Correta: ", type: "CNPJ" }
 			]
 		},
 		{
-			ID: 25,
+			ID: 23,
 			optFields: [
 				{ label: "Emissão Lançada: ", type: "Date" },
 				{ label: "Emissão Correta: ", type: "Date" }
 			]
 		},
 		{
-			ID: 26,
+			ID: 24,
 			optFields: [
 				{ label: "Filial Lançada: ", type: "Filial" },
 				{ label: "Filial Correta: ", type: "Filial" }
 			]
 		},
 		{
-			ID: 27,
+			ID: 25,
 			optFields: [
 				{ label: "Série Lançada: ", type: "Text" },
 				{ label: "Série Correta: ", type: "Text" }
 			]
 		},
 		{
-			ID: 28,
+			ID: 26,
 			optFields: [
 				{ label: "Tipo de Movimento Lançado: ", type: "Text" },
 				{ label: "Tipo de Movimento Correto: ", type: "Text" }
 			]
 		},
 		{
-			ID: 30,
+			ID: 28,
 			optFields: [
 				{ label: "Valor do IRRF Lançado: ", type: "Money" },
 				{ label: "Valor do IRRF Correto: ", type: "Money" }
 			]
 		},
 		{
-			ID: 31,
+			ID: 29,
 			optFields: [
 				{ label: "Valor Lançado: ", type: "Money" },
 				{ label: "Valor Correto: ", type: "Money" }
 			]
 		},
 		{
-			ID: 32,
+			ID: 30,
 			optFields: [
 				{ label: "Valor do PIS/COFINS/CSLL Lançado: ", type: "Money" },
 				{ label: "Valor do PIS/COFINS/CSLL Correto: ", type: "Money" }
 			]
 		},
 		{
-			ID: 33,
+			ID: 31,
 			optFields: [
 				{ label: "Valor do INSS Lançado: ", type: "Money" },
 				{ label: "Valor do INSS Correto: ", type: "Money" }
 			]
 		},
 		{
-			ID: 38,
+			ID: 36,
 			optFields: [
 				{ label: "Valor do ISS Lançado: ", type: "Money" },
 				{ label: "Valor do ISS Correto: ", type: "Money" }
 			]
 		},
 		{
-			ID: 41,
+			ID: 39,
 			optFields: [
 				{ label: "Quantidade de Folhas Enviadas: ", type: "Text" },
 				{ label: "Quantidade de Folhas Totais: ", type: "Text" }
@@ -477,6 +480,7 @@ async function CancelaDivergencia(Divergencia, Motivo) {
 }
 
 async function NotificaDivergencias(Divergencias) {
+	LoadingEnvioDeEmail.show()
 	for (const Notificacao of Divergencias) {
 		var DivegenciasAtivas = "";
 		var DivegenciasCanceladas = "";
@@ -529,7 +533,7 @@ async function NotificaDivergencias(Divergencias) {
 			html += "</tr>"
 			html += "</thead>"
 			html += "<tbody>"
-				html+= DivegenciasAtivas;
+			html += DivegenciasAtivas;
 			html += "</tbody>"
 			html += "</table>"
 			html += "</div>"
@@ -553,7 +557,7 @@ async function NotificaDivergencias(Divergencias) {
 			html += "</tr>"
 			html += "</thead>"
 			html += "<tbody>"
-				html+= DivegenciasCanceladas;
+			html += DivegenciasCanceladas;
 			html += "</tbody>"
 			html += "</table>"
 			html += "</div>"
@@ -567,7 +571,10 @@ async function NotificaDivergencias(Divergencias) {
 		await EnviaEmail(html, Notificacao.CODUSUARIO, Notificacao.EmailCopia);
 		await AlteraStatusEmailParaEnviado(Notificacao.Divergencias);
 	}
+
+	LoadingEnvioDeEmail.hide();
 }
+
 
 async function AlteraStatusEmailParaEnviado(Divergencias) {
 	for (const Divergencia of Divergencias) {
@@ -579,47 +586,47 @@ async function AlteraStatusEmailParaEnviado(Divergencias) {
 }
 
 function EnviaEmail(CorpoEmail, usuario, emails) {
-	return new Promise((resolve, reject)=>{
-	//var url = 'http://fluig.castilho.com.br:1010';//Prod
-	var url = 'http://homologacao.castilho.com.br:2020';//Homolog
+	return new Promise((resolve, reject) => {
+		var url = 'http://fluig.castilho.com.br:1010';//Prod
+		// var url = 'http://homologacao.castilho.com.br:2020';//Homolog
 
 
-	var data = {
-		//"to": emails,
-		"to": "gabriel.persike@castilho.com.br",
-		//from: "fluig@construtoracastilho.com.br", //Prod
-		from: "no-reply@construtoracastilho.com.br", //Homolog
-		"subject": usuario + " - Divergências Contabilidade", //   subject
-		"templateId": "TPL_PADRAO_CASTILHO", // Email template Id previously registered
-		"dialectId": "pt_BR", //Email dialect , if not informed receives pt_BR , email dialect ("pt_BR", "en_US", "es")
-		"param": {
-			"CORPO_EMAIL": CorpoEmail,
-			"SERVER_URL": url,
-			"TENANT_ID": "1"
-		}
-	};
+		var data = {
+			"to": emails,
+			// "to": "gabriel.persike@castilho.com.br",
+			from: "fluig@construtoracastilho.com.br", //Prod
+			// from: "no-reply@construtoracastilho.com.br", //Homolog
+			"subject": usuario + " - Divergências Contabilidade", //   subject
+			"templateId": "TPL_PADRAO_CASTILHO", // Email template Id previously registered
+			"dialectId": "pt_BR", //Email dialect , if not informed receives pt_BR , email dialect ("pt_BR", "en_US", "es")
+			"param": {
+				"CORPO_EMAIL": CorpoEmail,
+				"SERVER_URL": url,
+				"TENANT_ID": "1"
+			}
+		};
 
-	$.ajax({
-		url: "/api/public/alert/customEmailSender",
-		type: "POST",
-		contentType: "application/json",
-		data: JSON.stringify(data)
-	})
-		.done(function (data) {
-			FLUIGC.toast({
-				title: "E-mail enviado com exito!",
-				message: "",
-				type: "warning"
-			});
-			resolve();
+		$.ajax({
+			url: "/api/public/alert/customEmailSender",
+			type: "POST",
+			contentType: "application/json",
+			data: JSON.stringify(data)
 		})
-		.fail(function (jqXHR, textStatus, errorThrown) {
-			FLUIGC.toast({
-				message: 'Erro ao enviar o e-mail.',
-				type: 'danger'
+			.done(function (data) {
+				FLUIGC.toast({
+					title: "E-mail enviado com exito!",
+					message: "",
+					type: "warning"
+				});
+				resolve();
+			})
+			.fail(function (jqXHR, textStatus, errorThrown) {
+				FLUIGC.toast({
+					message: 'Erro ao enviar o e-mail.',
+					type: 'danger'
+				});
+				//Falha
 			});
-			//Falha
-		});
 
 	})
 
@@ -650,7 +657,7 @@ function AbreModalDetalhes(Divergencia, onBuscaDivergencias) {
 		if (err) {
 		} else {
 			//Apos criar a Modal inicia o <ModalDetalhes/> dentro da Modal
-			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia,onBuscaDivergencias:onBuscaDivergencias }), document.querySelector("#rootModalDetalhes"));
+			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia, onBuscaDivergencias: onBuscaDivergencias }), document.querySelector("#rootModalDetalhes"));
 		}
 	});
 }
@@ -809,29 +816,9 @@ function ExecutaDataset(DatasetName, Fields, Constraints, Order, AceitaRetornarV
 	});
 }
 
-async function UsuarioTemPermissaoGeral(user) {
-	try {
-		var grupos = await ExecutaDataset("colleagueGroup", null, [
-			DatasetFactory.createConstraint("colleagueId", user, user, ConstraintType.MUST),
-			DatasetFactory.createConstraint("groupId", "Contabilidade", "Contabilidade", ConstraintType.SHOULD),
-			DatasetFactory.createConstraint("groupId", "Administrador TI", "Administrador TI", ConstraintType.SHOULD)
-		], null, true);
-
-		if (grupos.length > 0) {
-			return true;
-		}
-	} catch (error) {
-		return false;
-	}
-}
-
-async function BuscaObras() {
-	var user = WCMAPI.userCode;
+async function BuscaTodasObras() {
 	var permissoes = await ExecutaDataset("BuscaPermissaoColigadasUsuario", null, [
-		(await UsuarioTemPermissaoGeral(user) ?
-			DatasetFactory.createConstraint("permissaoGeral", "true", "true", ConstraintType.MUST) :
-			DatasetFactory.createConstraint("usuario", user, user, ConstraintType.MUST)
-		)
+		DatasetFactory.createConstraint("permissaoGeral", "true", "true", ConstraintType.MUST)
 	], null);
 
 	return permissoes.filter(e => e.CODCOLIGADA == 1).map(({ CODCCUSTO, perfil }) => ({ CODCCUSTO, perfil }))
@@ -868,3 +855,53 @@ function validaEmail(email) {
 	const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 	return emailPattern.test(email);
 }
+
+function validaGrupo(usuario, grupos) {//Verifica se o usuario faz parte dos grupos
+	var constraints = [DatasetFactory.createConstraint("colleagueId", usuario, usuario, ConstraintType.MUST)];
+	for (var i = 0; i < grupos.length; i++) {
+		constraints.push(DatasetFactory.createConstraint("groupId", grupos[i], grupos[i], ConstraintType.SHOULD));
+	}
+
+	var ds = DatasetFactory.getDataset("colleagueGroup", null, constraints, null);
+
+	if (ds.values.length > 0) {
+		return ds.values[0]["colleagueGroupPK.groupId"];
+	} else {
+		return false;
+	}
+}
+
+async function VerificaPermissoesDoUsuario(user) {
+	if (validaGrupo(user, ["Contabilidade", "Administrador TI"])) {
+		return { Permissao: "Geral" };
+	}
+	else if (user == "rodrigo.ramos") {
+		return { Permissao: "Visualizacao" };
+	}
+	else if (validaGrupo(user, ["Chefes de Escritório"])) {
+		var Obras = await ExecutaDataset("colleagueGroup", null, [
+			DatasetFactory.createConstraint("colleagueId", user, user, ConstraintType.MUST),
+			DatasetFactory.createConstraint("groupId", "Obra%", "Obra%", ConstraintType.MUST, true)
+		], null);
+
+		Obras = Obras.map((e) => e["colleagueGroupPK.groupId"]);
+		console.log(Obras)
+		return { Permissao: "VisualizacaoObra", Obras: Obras }
+	}
+	else {
+		return { Permissao: "VisualizacaoUsuario" };
+	}
+}
+
+function BuscaEpoch(date){
+	date = new Date(date);
+	return date.getTime()
+}
+
+function TraduzMes(value){
+	value = new Date(value)
+	var mes = value.toLocaleString("pt-BR", {month:"short"}).replace(".","")
+	return mes + "/" + value.getFullYear();
+}
+
+

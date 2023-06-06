@@ -11,9 +11,12 @@
     <link rel="stylesheet" href="/DivergenciasdeLancamento/resources/css/antd.min.css" />
     <script src="/DivergenciasdeLancamento/resources/js/antd.min.js"></script>
 
+    <!--ChartJS-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@^1"></script>
+
     <!--Fluig-->
     <script src="/webdesk/vcXMLRPC.js"></script>
-    <script src="/style-guide/js/fluig-style-guide-chart.min.js"></script>
 
     <!--DataTables-->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css" />

@@ -1,10 +1,149 @@
 const useEffect = React.useEffect;
 const useState = React.useState;
 const Select = antd.Select;
+const AntdOption = antd.Select.Option;
 const DatePicker = antd.DatePicker;
 
+var ChartQuantidadePorCategoria = null;
+var ChartQuantidadePorUsuario = null;
+var ChartQuantidadePorDataDeEmissao = null;
+
+const colors = [
+    "#FF0000", // Red
+    "#00FF00", // Green
+    "#0000FF", // Blue
+    "#FFFF00", // Yellow
+    "#FF00FF", // Magenta
+    "#00FFFF", // Cyan
+    "#FFA500", // Orange
+    "#800080", // Purple
+    "#008000", // Dark Green
+    "#000080", // Navy Blue
+    "#FFC0CB", // Pink
+    "#FF4500", // Orange Red
+    "#FFD700", // Gold
+    "#FF1493", // Deep Pink
+    "#00FF7F", // Spring Green
+    "#8A2BE2", // Blue Violet
+    "#ADFF2F", // Green Yellow
+    "#7FFF00", // Chartreuse
+    "#FF69B4", // Hot Pink
+    "#00CED1", // Dark Turquoise
+    "#F08080", // Light Coral
+    "#87CEEB", // Sky Blue
+    "#DDA0DD", // Plum
+    "#00BFFF", // Deep Sky Blue
+    "#9932CC", // Dark Orchid
+    "#20B2AA", // Light Sea Green
+    "#B0C4DE", // Light Steel Blue
+    "#8B008B", // Dark Magenta
+    "#2F4F4F", // Dark Slate Gray
+    "#FF6347" // Tomato
+];
+
 function AppRoot() {
-    const [Divergencias, setDivergencias] = useState([]);
+    const [Permissao, setPermissao] = useState({ Permissao: null, Obras: [] });
+
+    useEffect(() => {
+        BuscaPermissao();
+    }, []);
+
+    async function BuscaPermissao() {
+        var user = WCMAPI.userCode;
+        var { Permissao, Obras } = await VerificaPermissoesDoUsuario(user);
+        setPermissao({ Permissao: Permissao, Obras: Obras });
+    }
+
+    return (
+        <ErrorBoundary>
+            <button className="btn btn-primary" onClick={BuscaPermissao}>
+                Atualiza Permissao
+            </button>
+            <div id="divCollapse">
+                <ul id="coltabs" className="nav nav-tabs nav-justified nav-pills" role="tablist" style={{ paddingBottom: "0px", width: "100%" }}>
+                    {Permissao.Permissao == "Geral" && (
+                        <>
+                            <li className="collapse-tab active">
+                                <a href="#tabLancarDivergencias" role="tab" id="atabLancarDivergencias" data-toggle="tab" aria-expanded="true" className="tab">
+                                    Lançar Divergência
+                                </a>
+                            </li>
+                            <li className="collapse-tab">
+                                <a href="#tabEnviarEmails" role="tab" id="atabEnviarEmails" data-toggle="tab" aria-expanded="true" className="tab">
+                                    Enviar E-mail
+                                </a>
+                            </li>
+                        </>
+                    )}
+                    <li className="collapse-tab">
+                        <a href="#tabListaDivergencias" role="tab" id="atabListaDivergencias" data-toggle="tab" aria-expanded="true" className="tab">
+                            Lista de Divergências
+                        </a>
+                    </li>
+                    <li className="collapse-tab">
+                        <a href="#tabDashboards" role="tab" id="atabDashboards" data-toggle="tab" aria-expanded="true" className="tab">
+                            Dashboards
+                        </a>
+                    </li>
+                </ul>
+                <div className="tab-content">
+                    {Permissao.Permissao == "Geral" && (
+                        <>
+                            <div className="tab-pane active" id="tabLancarDivergencias">
+                                <Lancamento />
+                            </div>
+                            <div className="tab-pane" id="tabEnviarEmails">
+                                <NotificarDivergencias Permissao={Permissao} />
+                            </div>
+                        </>
+                    )}
+                    <div className="tab-pane" id="tabListaDivergencias">
+                        <ListaDivergencias Permissao={Permissao} />
+                    </div>
+                    <div className="tab-pane" id="tabDashboards">
+                        <DashboardDivergencias Permissao={Permissao} />
+                    </div>
+                </div>
+            </div>
+        </ErrorBoundary>
+    );
+}
+
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError(error) {
+        // Update state so the next render will show the fallback UI.
+        return { hasError: true };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        // You can also log the error to an error reporting service
+        console.log(error, errorInfo);
+        FLUIGC.toast({
+            message: errorInfo,
+            type: "danger"
+        });
+        FLUIGC.toast({
+            message: error,
+            type: "danger"
+        });
+    }
+
+    render() {
+        if (this.state.hasError) {
+            // You can render any custom fallback UI
+            return <h1>Um erro ocorreu! Tente atualizar a página, e caso o erro percista entre em contato com o Administrador do Sistema.</h1>;
+        }
+
+        return this.props.children;
+    }
+}
+
+function FiltroListaDivergencias({ onBuscaDivergencias, Permissao }) {
     const [Filtros, setFiltros] = useState({
         FiltroObra: "Todos",
         FiltroUsuario: "Todos",
@@ -15,11 +154,58 @@ function AppRoot() {
         FiltroStatus: "Ativo"
     });
 
+    const [OptionsObras, setOptionsObras] = useState([]);
+    const [OptionsUsuarios, setOptionsUsuarios] = useState([]);
+    const [BuscandoDivergencias, setBuscandoDivergencias] = useState(false);
+
     useEffect(() => {
-        handleBuscaDivergencias();
+        CriaListaNoFiltroPorObra();
+        CriaListaNoFiltroPorUsuario();
     }, []);
 
-    async function handleBuscaDivergencias() {
+    useEffect(() => {
+        CriaListaNoFiltroPorObra();
+    }, [Permissao]);
+
+    function handleChangeFiltro(target, value) {
+        setFiltros((prevFiltros) => ({
+            ...prevFiltros,
+            [target]: value
+        }));
+    }
+
+    function CriaListaNoFiltroPorObra() {
+        var obras = [];
+        if (Permissao.Permissao == "VisualizacaoObra") {
+            obras = Permissao.Obras.map((e) => {
+                return { label: e, value: e };
+            });
+        } else {
+            BuscaTodasObras().then((TodasObras) => {
+                obras = TodasObras.map((e) => {
+                    return { value: e.perfil, label: e.CODCCUSTO + " - " + e.perfil };
+                });
+            });
+        }
+
+        obras.push({ value: "Todos", label: "Todos" });
+        setOptionsObras(obras);
+    }
+
+    async function CriaListaNoFiltroPorUsuario() {
+        if (Permissao == "VisualizacaoUsuario") {
+            setOptionsUsuarios({ label: WCMAPI.userCode, value: WCMAPI.userCode });
+        } else {
+            var usuarios = await ExecutaDataset("colleague", ["colleagueId"], [], null);
+            usuarios = usuarios.map((e) => {
+                return { label: e.colleagueId, value: e.colleagueId };
+            });
+            usuarios.push({ label: "Todos", value: "Todos" });
+            setOptionsUsuarios(usuarios);
+        }
+    }
+
+    async function BuscarDivergencias() {
         var filtros = {
             Obra: Filtros.FiltroObra,
             Usuario: Filtros.FiltroUsuario,
@@ -30,65 +216,122 @@ function AppRoot() {
             Status: Filtros.FiltroStatus
         };
 
-        setDivergencias(await BuscaDivergencias(filtros));
-    }
-
-    function handleChangeFiltro(target, value) {
-        setFiltros((prevFiltros) => ({
-            ...prevFiltros,
-            [target]: value
-        }));
+        onBuscaDivergencias(await BuscaDivergencias(filtros));
     }
 
     return (
-        <ErrorBoundary>
-            <div id="divCollapse">
-                <ul id="coltabs" className="nav nav-tabs nav-justified nav-pills" role="tablist" style={{ paddingBottom: "0px", width: "100%" }}>
-                    <li className="collapse-tab active">
-                        <a href="#tabLancarDivergencias" role="tab" id="atabLancarDivergencias" data-toggle="tab" aria-expanded="true" className="tab">
-                            Lançar Divergência
-                        </a>
-                    </li>
-                    <li className="collapse-tab">
-                        <a href="#tabListaDivergencias" role="tab" id="atabListaDivergencias" data-toggle="tab" aria-expanded="true" className="tab">
-                            Lista de Divergências
-                        </a>
-                    </li>
-                    {/* <li className="collapse-tab">
-                        <a href="#tabDashboards" role="tab" id="atabDashboards" data-toggle="tab" aria-expanded="true" className="tab">
-                            Dashboards
-                        </a>
-                    </li> */}
-                    <li className="collapse-tab">
-                        <a href="#tabEnviarEmails" role="tab" id="atabEnviarEmails" data-toggle="tab" aria-expanded="true" className="tab">
-                            Enviar E-mail
-                        </a>
-                    </li>
-                </ul>
-                <div className="tab-content">
-                    <div className="tab-pane active" id="tabLancarDivergencias">
-                        <Lancamento />
-                    </div>
-                    <div className="tab-pane" id="tabListaDivergencias">
-                        <FiltroListaDivergencias
-                            Filtros={Filtros}
-                            onChangeFiltro={(target, value) => handleChangeFiltro(target, value)}
-                            onBuscaDivergencias={handleBuscaDivergencias}
-                        />
-                        <ListaDivergencias Divergencias={Divergencias} onBuscaDivergencias={handleBuscaDivergencias} />
-                    </div>
-                    <div className="tab-pane" id="tabDashboards">
-                        {/* <DashboardDivergencias /> */}
-                    </div>
-                    <div className="tab-pane" id="tabEnviarEmails">
-                        <NotificarDivergencias />
-                    </div>
+        <Panel Title="Filtro" HideAble={true} IniciaFechado={true}>
+            <div className="row">
+                <div className="col-md-4">
+                    <b>Obra:</b>
+                    <Select
+                        style={{ width: "100%" }}
+                        showSearch
+                        filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
+                        value={Filtros.FiltroObra}
+                        onChange={(e) => handleChangeFiltro("FiltroObra", e)}
+                    >
+                        {OptionsObras.map((e) => (
+                            <AntdOption value={e.value}>{e.label}</AntdOption>
+                        ))}
+                    </Select>
+                </div>
+                <div className="col-md-4">
+                    <b>Usuário:</b>
+                    <Select
+                        style={{ width: "100%" }}
+                        showSearch
+                        filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
+                        options={OptionsUsuarios}
+                        value={Filtros.FiltroUsuario}
+                        onChange={(e) => handleChangeFiltro("FiltroUsuario", e)}
+                    />
+                </div>
+                <div className="col-md-4">
+                    <b>Tipo de Movimento:</b>
+                    <select className="form-control" value={Filtros.FiltroTipoDeMovimento} onChange={(e) => handleChangeFiltro("FiltroTipoDeMovimento", e.target.value)}>
+                        <option value="Todos">Todos</option>
+                        <option value="1.2.01">1.2.01</option>
+                        <option value="1.2.03">1.2.03</option>
+                        <option value="1.2.04">1.2.04</option>
+                        <option value="1.2.05">1.2.05</option>
+                        <option value="1.2.06">1.2.06</option>
+                        <option value="1.2.07">1.2.07</option>
+                        <option value="1.2.08">1.2.08</option>
+                        <option value="1.2.09">1.2.09</option>
+                        <option value="1.2.10">1.2.10</option>
+                        <option value="1.2.11">1.2.11</option>
+                        <option value="1.2.13">1.2.13</option>
+                        <option value="1.2.14">1.2.14</option>
+                        <option value="1.2.15">1.2.15</option>
+                        <option value="1.2.17">1.2.17</option>
+                        <option value="1.2.21">1.2.21</option>
+                        <option value="1.2.22">1.2.22</option>
+                        <option value="1.2.24">1.2.24</option>
+                        <option value="1.2.30">1.2.30</option>
+                        <option value="1.2.31">1.2.31</option>
+                        <option value="1.2.32">1.2.32</option>
+                        <option value="1.2.38">1.2.38</option>
+                        <option value="1.2.39">1.2.39</option>
+                        <option value="1.2.40">1.2.40</option>
+                    </select>
                 </div>
             </div>
-        </ErrorBoundary>
+            <br />
+            <div className="row">
+                <div className="col-md-4">
+                    <b>Período:</b>
+                    <select className="form-control" value={Filtros.FiltroPeriodo} onChange={(e) => handleChangeFiltro("FiltroPeriodo", e.target.value)}>
+                        <option value="Emissao">Data de Emissão</option>
+                        <option value="Lancamento">Data de Lançamento da Divergência</option>
+                    </select>
+                </div>
+                <div className="col-md-2">
+                    <b>Periodo Inicio:</b>
+                    <br />
+                    <DatePicker
+                        format={"DD/MM/YYYY"}
+                        onChange={(e) => {
+                            handleChangeFiltro("FiltroPeriodoInicio", e);
+                        }}
+                        value={Filtros.FiltroPeriodoInicio}
+                        style={{ width: "100%" }}
+                    />
+                </div>
+                <div className="col-md-2">
+                    <b>Periodo Final:</b>
+                    <br />
+                    <DatePicker format={"DD/MM/YYYY"} onChange={(e) => handleChangeFiltro("FiltroPeriodoFim", e)} value={Filtros.FiltroPeriodoFim} style={{ width: "100%" }} />
+                </div>
+                <div className="col-md-4">
+                    <b>Status:</b>
+                    <select className="form-control" value={Filtros.FiltroStatus} onChange={(e) => handleChangeFiltro("FiltroStatus", e.target.value)}>
+                        <option value="Ativo">Ativo</option>
+                        <option value="Cancelado">Cancelado</option>
+                        <option value="Todos">Todos</option>
+                    </select>
+                </div>
+            </div>
+            <br />
+            <div style={{ textAlign: "right" }}>
+                <button
+                    className="btn btn-success"
+                    onClick={async () => {
+                        if (!BuscandoDivergencias) {
+                            setBuscandoDivergencias(true);
+                            await BuscarDivergencias();
+                            setBuscandoDivergencias(false);
+                        }
+                    }}
+                >
+                    {BuscandoDivergencias == true ? "Buscando..." : "Buscar"}
+                </button>
+            </div>
+        </Panel>
     );
 }
 
+//  LANÇAMENTO DE DIVERGENCIAS
 class Lancamento extends React.Component {
     constructor(props) {
         super(props);
@@ -285,7 +528,7 @@ class Lancamento extends React.Component {
                             <div className="col-md-3">
                                 <div>
                                     <b>Valor Total: </b>
-                                    <MoneySpan text={this.state.Movimento.ValorTotal != "" ? "R$" + parseFloat(this.state.Movimento.ValorTotal).toFixed(2) : ""} />
+                                    <MoneySpan value={this.state.Movimento.ValorTotal != "" ? parseFloat(this.state.Movimento.ValorTotal) : ""} />
                                 </div>
                                 <br />
                             </div>
@@ -344,7 +587,6 @@ class Lancamento extends React.Component {
         );
     }
 }
-
 class BuscadorDeMovimento extends React.Component {
     constructor(props) {
         super(props);
@@ -468,7 +710,6 @@ class BuscadorDeMovimento extends React.Component {
         );
     }
 }
-
 function LancamentoDivergencia({ CategoriaDivergencia, onChangeCategoriaDivergencia, ObservacaoDivergencia, onChangeObservacaoDivergencia, onChangeCamposCategoriaDivergencia }) {
     const [ListaCategoriasDeDivergencias, setListaCategoriasDeDivergencias] = useState([]);
     const [CamposComplementaresCategoriasDeDivergencias, setCamposComplementaresCategoriasDeDivergencias] = useState([]);
@@ -597,8 +838,22 @@ function LancamentoDivergencia({ CategoriaDivergencia, onChangeCategoriaDivergen
     );
 }
 
-function ListaDivergencias({ Divergencias, onBuscaDivergencias }) {
+
+//  LISTAR DIVERGENCIAS
+function ListaDivergencias({ onBuscaDivergencias, Permissao }) {
+    const [Divergencias, setDivergencias] = useState([]);
+
     useEffect(() => {
+        IniciaDataTables();
+        handleBuscaDivergencias();
+    }, []);
+
+    useEffect(() => {
+        //Toda vez que o componente foi atualizado passa as Divergencias para a DataTables
+        AtualizaDataTables();
+    }, [Divergencias]);
+
+    function IniciaDataTables() {
         //Ao Criar o componente Inicia a DataTables
         DataTableDivergencias = $("#TableDivergencias").DataTable({
             pageLength: 25,
@@ -710,157 +965,54 @@ function ListaDivergencias({ Divergencias, onBuscaDivergencias }) {
                 AbreModalDetalhes(values, e.data.onBuscaDivergencias);
             });
         });
-    }, []);
+    }
 
-    useEffect(() => {
-        //Toda vez que o componente foi atualizado passa as Divergencias para a DataTables
+    function AtualizaDataTables(){
         DataTableDivergencias.clear();
         DataTableDivergencias.rows.add(Divergencias);
         setTimeout(() => {
             DataTableDivergencias.columns.adjust().draw();
         }, 200);
-    }, [Divergencias]);
-
-    return (
-        <Panel Title="Divergências/Correções">
-            <table className="table table-bordered table-striped" id="TableDivergencias" style={{ width: "100%" }}>
-                <thead>
-                    <tr>
-                        <th>Número</th>
-                        <th>Emissão</th>
-                        <th>T.M.</th>
-                        <th>Filial</th>
-                        <th>Data Divergência</th>
-                        <th>Fornecedor</th>
-                        <th>Usuário</th>
-                        <th>Correção</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </Panel>
-    );
-}
-
-function FiltroListaDivergencias({ Filtros, onChangeFiltro, onBuscaDivergencias }) {
-    const [OptionsObras, setOptionsObras] = useState([]);
-    const [OptionsUsuarios, setOptionsUsuarios] = useState([]);
-    const [BuscandoDivergencias, setBuscandoDivergencias] = useState(false);
-
-    useEffect(() => {
-        CriaListaNoFiltroPorObra();
-        CriaListaNoFiltroPorUsuario();
-    }, []);
-
-    async function CriaListaNoFiltroPorObra() {
-        var obras = await BuscaObras();
-        obras = obras.map((e) => {
-            return { label: e.CODCCUSTO + " - " + e.perfil, value: e.perfil };
-        });
-        obras.push({ label: "Todos", value: "Todos" });
-        setOptionsObras(obras);
     }
 
-    async function CriaListaNoFiltroPorUsuario() {
-        var usuarios = await ExecutaDataset("colleague", ["colleagueId"], [], null);
-        usuarios = usuarios.map((e) => {
-            return { label: e.colleagueId, value: e.colleagueId };
-        });
-        usuarios.push({ label: "Todos", value: "Todos" });
-        setOptionsUsuarios(usuarios);
+    async function handleBuscaDivergencias() {
+        var filtros = {
+            Obra: Filtros.FiltroObra,
+            Usuario: Filtros.FiltroUsuario,
+            TipoDeMovimento: Filtros.FiltroTipoDeMovimento,
+            Periodo: Filtros.FiltroPeriodo,
+            PeriodoInicio: Filtros.FiltroPeriodoInicio,
+            PeriodoFim: Filtros.FiltroPeriodoFim,
+            Status: Filtros.FiltroStatus
+        };
+
+        setDivergencias(await BuscaDivergencias(filtros));
     }
 
     return (
-        <Panel Title="Filtro" HideAble={true} IniciaFechado={true}>
-            <div className="row">
-                <div className="col-md-4">
-                    <b>Obra:</b>
-                    <Select
-                        style={{ width: "100%" }}
-                        showSearch
-                        filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
-                        options={OptionsObras}
-                        value={Filtros.FiltroObra}
-                        onChange={(e) => onChangeFiltro("FiltroObra", e)}
-                    />
-                </div>
-                <div className="col-md-4">
-                    <b>Usuário:</b>
-                    <Select
-                        style={{ width: "100%" }}
-                        showSearch
-                        filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
-                        options={OptionsUsuarios}
-                        value={Filtros.FiltroUsuario}
-                        onChange={(e) => onChangeFiltro("FiltroUsuario", e)}
-                    />
-                </div>
-                <div className="col-md-4">
-                    <b>Tipo de Movimento:</b>
-                    <select className="form-control" value={Filtros.FiltroTipoDeMovimento} onChange={(e) => onChangeFiltro("FiltroTipoDeMovimento", e.target.value)}>
-                        <option value="Todos">Todos</option>
-                        <option value="1.2.01">1.2.01</option>
-                        <option value="1.2.05">1.2.05</option>
-                        <option value="1.2.06">1.2.06</option>
-                        <option value="1.2.10">1.2.10</option>
-                    </select>
-                </div>
-            </div>
-            <br />
-            <div className="row">
-                <div className="col-md-4">
-                    <b>Período:</b>
-                    <select className="form-control" value={Filtros.FiltroPeriodo} onChange={(e) => onChangeFiltro("FiltroPeriodo", e.target.value)}>
-                        <option value="Emissao">Data de Emissão</option>
-                        <option value="Lancamento">Data de Lançamento da Divergência</option>
-                    </select>
-                </div>
-                <div className="col-md-2">
-                    <b>Periodo Inicio:</b>
-                    <br />
-                    <DatePicker
-                        format={"DD/MM/YYYY"}
-                        onChange={(e) => {
-                            onChangeFiltro("FiltroPeriodoInicio", e);
-                        }}
-                        value={Filtros.FiltroPeriodoInicio}
-                        style={{ width: "100%" }}
-                    />
-                </div>
-                <div className="col-md-2">
-                    <b>Periodo Final:</b>
-                    <br />
-                    <DatePicker format={"DD/MM/YYYY"} onChange={(e) => onChangeFiltro("FiltroPeriodoFim", e)} value={Filtros.FiltroPeriodoFim} style={{ width: "100%" }} />
-                </div>
-                <div className="col-md-4">
-                    <b>Status:</b>
-                    <select className="form-control" value={Filtros.FiltroStatus} onChange={(e) => onChangeFiltro("FiltroStatus", e.target.value)}>
-                        <option value="Ativo">Ativo</option>
-                        <option value="Cancelado">Cancelado</option>
-                        <option value="Todos">Todos</option>
-                    </select>
-                </div>
-            </div>
-            <br />
-            <div style={{ textAlign: "right" }}>
-                <button
-                    className="btn btn-success"
-                    onClick={async () => {
-                        if (!BuscandoDivergencias) {
-                            setBuscandoDivergencias(true);
-                            await onBuscaDivergencias();
-                            setBuscandoDivergencias(false);
-                        }
-                    }}
-                >
-                    {BuscandoDivergencias == true ? "Buscando..." : "Buscar"}
-                </button>
-            </div>
-        </Panel>
+        <>
+            <FiltroListaDivergencias onBuscaDivergencias={handleBuscaDivergencias} Permissao={Permissao} />
+            <Panel Title="Divergências/Correções">
+                <table className="table table-bordered table-striped" id="TableDivergencias" style={{ width: "100%" }}>
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Emissão</th>
+                            <th>T.M.</th>
+                            <th>Filial</th>
+                            <th>Data Divergência</th>
+                            <th>Fornecedor</th>
+                            <th>Usuário</th>
+                            <th>Correção</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </Panel>
+        </>
     );
 }
-
 class ModalDetalhes extends React.Component {
     constructor(props) {
         super(props);
@@ -1115,380 +1267,9 @@ class ModalDetalhes extends React.Component {
     }
 }
 
-function Item({ ItemIndex, CodigoProduto, Produto, Quantidade, ValorUnit, CODUND }) {
-    return (
-        <tr>
-            <td>
-                <span>{ItemIndex + 1}</span>
-            </td>
-            <td>
-                <span>{CodigoProduto + " - " + Produto}</span>
-            </td>
-            <td>{Quantidade + " " + CODUND}</td>
-            <td>
-                <MoneySpan value={ValorUnit} QuantidadeDeCasasDecimais={4} />
-            </td>
-            <td>
-                <MoneySpan value={Quantidade * ValorUnit} />
-            </td>
-        </tr>
-    );
-}
 
-function Panel({ children, Title, HideAble = false, IniciaFechado = false }) {
-    const [BodyShown, setBodyShown] = useState(!IniciaFechado);
-
-    function handleClickDetails(e) {
-        if (HideAble) {
-            if (BodyShown) {
-                $(e.target).closest(".panel").find(".panel-body:first").slideUp();
-            } else {
-                $(e.target).closest(".panel").find(".panel-body:first").slideDown();
-            }
-
-            setBodyShown(!BodyShown);
-        }
-    }
-
-    return (
-        <div className="panel panel-primary">
-            <div
-                className="panel-heading"
-                onClick={(e) => {
-                    if (HideAble) {
-                        handleClickDetails(e);
-                    }
-                }}
-            >
-                {HideAble == true && <div className={"details " + (BodyShown ? "detailsHide" : "detailsShow")}></div>}
-
-                <h4 className="panel-title" style={{ display: "inline-block", verticalAlign: "middle" }}>
-                    {Title}
-                </h4>
-            </div>
-            <div className="panel-body" style={{ display: IniciaFechado ? "none" : "block" }}>
-                {children}
-            </div>
-        </div>
-    );
-}
-
-function DashboardDivergencias() {
-    useEffect(() => {
-        var chart = FLUIGC.chart("#pieChart", {
-            id: "set_an_id_for_my_chart",
-            width: "700",
-            height: "200"
-            /* See the list of options */
-        });
-
-        var pieChart = chart.pie([
-            {
-                value: 300,
-                color: "#F7464A",
-                highlight: "#FF5A5E",
-                label: "Red"
-            },
-            {
-                value: 50,
-                color: "#46BFBD",
-                highlight: "#5AD3D1",
-                label: "Green"
-            },
-            {
-                value: 100,
-                color: "#FDB45C",
-                highlight: "#FFC870",
-                label: "Yellow"
-            }
-        ]);
-    }, []);
-
-    return <div id="pieChart"></div>;
-}
-
-function CPFCNPJInput({ value, type = "CPF/CNPJ", onChange }) {
-    function handleChange(e) {
-        var valor = e.target.value;
-        valor = valor.replace(/\D/g, "");
-        valor = valor.split("");
-
-        if (valor.length <= 11) {
-            valor = maskCPF(valor);
-        } else {
-            valor = maskCNPJ(valor);
-        }
-
-        onChange(valor);
-    }
-
-    function handleBlur(e) {
-        var valor = e.target.value;
-        valor = valor.replace(/\D/g, "");
-        valor = valor.split("");
-
-        if (valor.length < 11) {
-            if (!validaCPF(maskCPF(valor))) {
-                FLUIGC.toast({
-                    title: "CPF Inválido!",
-                    message: "",
-                    type: "warning"
-                });
-                onChange("");
-            } else {
-                if (!validarCNPJ(maskCNPJ(valor))) {
-                    FLUIGC.toast({
-                        title: "CNPJ Inválido!",
-                        message: "",
-                        type: "warning"
-                    });
-                    onChange("");
-                }
-            }
-        }
-    }
-
-    function maskCPF(value) {
-        var formatValue = "";
-        //098.560.269-46
-        //012 345 678 910
-        for (const [i, char] of value.entries()) {
-            if (i == 3 || i == 6) {
-                formatValue += ".";
-            } else if (i == 9) {
-                formatValue += "-";
-            }
-
-            if (i < 11) {
-                formatValue += char;
-            }
-        }
-
-        return formatValue;
-    }
-    function maskCNPJ(value) {
-        var formatValue = "";
-        for (const [i, char] of value.entries()) {
-            if (i == 2 || i == 5) {
-                formatValue += ".";
-            } else if (i == 8) {
-                formatValue += "/";
-            } else if (i == 12) {
-                formatValue += "-";
-            }
-
-            if (i < 14) {
-                formatValue += char;
-            }
-        }
-
-        return formatValue;
-    }
-
-    return <input type="text" className="form-control" value={value} onChange={handleChange} onBlur={handleBlur} />;
-}
-
-class ProdutoInput extends React.Component {
-    render() {
-        var options = Produtos;
-
-        return (
-            <div>
-                <antd.AutoComplete
-                    style={{ width: "100%" }}
-                    value={this.props.value}
-                    onChange={(e) => this.props.onChange(e)}
-                    options={options}
-                    filterOption={(inputValue, option) => option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1}
-                />
-            </div>
-        );
-    }
-}
-
-class DepartamentoInput extends React.Component {
-    render() {
-        return (
-            <div>
-                <antd.Select
-                    options={Departamentos}
-                    showSearch
-                    value={this.props.value}
-                    filterOption={(input, option) => {
-                        if (option.children) {
-                            return option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
-                        } else if (option.label) {
-                            return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
-                        }
-                    }}
-                    onChange={(e) => this.props.onChange(e)}
-                    style={{ width: "100%" }}
-                />
-            </div>
-        );
-    }
-}
-
-class FilialInput extends React.Component {
-    render() {
-        var optionsFiliais = [];
-        for (const Filial of Filiais) {
-            optionsFiliais.push({
-                label: Filial.CODFILIAL + " - " + Filial.FILIAL,
-                value: Filial.CODFILIAL + " - " + Filial.FILIAL
-            });
-        }
-
-        return (
-            <div>
-                <antd.Select
-                    options={optionsFiliais}
-                    showSearch
-                    value={this.props.value}
-                    filterOption={(input, option) => {
-                        if (option.children) {
-                            return option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
-                        } else if (option.label) {
-                            return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
-                        }
-                    }}
-                    onChange={(e) => this.props.onChange(e)}
-                    style={{ width: "100%" }}
-                />
-            </div>
-        );
-    }
-}
-
-function MoneySpan({ value, QuantidadeDeCasasDecimais = 2 }) {
-    value = FormataValorParaMoeda(value);
-
-    function FormataValorParaMoeda(valor) {
-        if (isNaN(valor)) {
-            return " - ";
-        }
-
-        if (valor) {
-            valor = parseFloat(valor);
-        }
-
-        return valor.toLocaleString("pt-br", {
-            minimumFractionDigits: QuantidadeDeCasasDecimais,
-            maximumFractionDigits: QuantidadeDeCasasDecimais
-        });
-    }
-
-    return (
-        <div style={{ display: "inline-block" }}>
-            R$<span>{value.split(",")[0]},</span>
-            <span style={{ fontSize: "80%" }}>{value.split(",")[1]}</span>
-        </div>
-    );
-}
-
-function MoneyInput({ value, onChange, QuantidadeDeCasasDecimais = 2, className, readOnly }) {
-    function formatValue(value) {
-        if (value) {
-            value = value.split(".");
-            var int = value[0].toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
-            var decimais = value[1] != undefined ? "," + value[1] : "";
-
-            return "R$ " + int + decimais;
-        } else {
-            return "R$ ";
-        }
-    }
-
-    function unformatValue(value) {
-        value = value.split(".").join("").split(",");
-        var inteiros = removeNaoNumericos(value[0]);
-        var decimais = value[1];
-
-        if (!inteiros && !decimais) {
-            return "";
-        } else {
-            if (decimais != undefined) {
-                decimais = "." + removeNaoNumericos(decimais);
-            } else {
-                decimais = "";
-            }
-
-            value = inteiros + decimais;
-            return value;
-        }
-    }
-
-    function removeNaoNumericos(value) {
-        if (value != undefined && value != null) {
-            return value.replace(/[^0-9]/g, "");
-        } else {
-            return false;
-        }
-    }
-
-    function handleChange(e) {
-        onChange(unformatValue(e.target.value));
-    }
-
-    function handleBlur(e) {
-        var value = e.target.value.split(",");
-        var inteiros = removeNaoNumericos(value[0]);
-        var decimais = removeNaoNumericos(value[1]);
-
-        if (!inteiros && !decimais) {
-            onChange("");
-        } else {
-            if (decimais != false) {
-                decimais = (decimais + "0000000000").substring(0, QuantidadeDeCasasDecimais);
-            } else {
-                decimais = "0000000000".substring(0, QuantidadeDeCasasDecimais);
-            }
-            value = inteiros + "." + decimais;
-
-            onChange(value);
-        }
-    }
-
-    return (
-        <input type="text" value={formatValue(value)} className={"form-control " + className} readOnly={readOnly} placeholder="R$" onChange={handleChange} onBlur={handleBlur} />
-    );
-}
-
-class ErrorBoundary extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = { hasError: false };
-    }
-
-    static getDerivedStateFromError(error) {
-        // Update state so the next render will show the fallback UI.
-        return { hasError: true };
-    }
-
-    componentDidCatch(error, errorInfo) {
-        // You can also log the error to an error reporting service
-        console.log(error, errorInfo);
-        FLUIGC.toast({
-            message: errorInfo,
-            type: "danger"
-        });
-        FLUIGC.toast({
-            message: error,
-            type: "danger"
-        });
-    }
-
-    render() {
-        if (this.state.hasError) {
-            // You can render any custom fallback UI
-            return <h1>Um erro ocorreu! Tente atualizar a página, e caso o erro percista entre em contato com o Administrador do Sistema.</h1>;
-        }
-
-        return this.props.children;
-    }
-}
-
-function NotificarDivergencias() {
+// ENVIAR EMAIL
+function NotificarDivergencias({ Permissao }) {
     const [Filtros, setFiltros] = useState({
         FiltroObra: "Todos",
         FiltroUsuario: "Todos",
@@ -1546,7 +1327,7 @@ function NotificarDivergencias() {
 
         async function BuscaEmailsCopia(Usuario) {
             try {
-                var emails = [BuscaEmailUsuario(Usuario), "contabilidade@castilho.com.br"];
+                var emails = [BuscaEmailUsuario(Usuario), "contabilidade@castilho.com.br", "gabriel.persike@castilho.com.br"];
                 var ds = await ExecutaDataset("colleagueGroup", null, [DatasetFactory.createConstraint("colleagueId", Usuario, Usuario, ConstraintType.MUST)], null, true);
 
                 var usuarioMatriz = false;
@@ -1561,7 +1342,11 @@ function NotificarDivergencias() {
                     } else if (Grupo["colleagueGroupPK.groupId"].substring(0, 4) == "Obra") {
                         var chefes = await BuscaChefeDeEscritorioDoGrupo(Grupo["colleagueGroupPK.groupId"]);
                         for (const Chefe of chefes) {
-                            emails.push(BuscaEmailUsuario(Chefe["colleagueGroupPK.colleagueId"]));
+                            var email = BuscaEmailUsuario(Chefe["colleagueGroupPK.colleagueId"]);
+                            var found = emails.find((e) => e == email);
+                            if (!found) {
+                                emails.push(email);
+                            }
                         }
                     }
                 }
@@ -1624,7 +1409,12 @@ function NotificarDivergencias() {
 
     return (
         <>
-            <FiltroListaDivergencias Filtros={Filtros} onChangeFiltro={(target, value) => handleChangeFiltro(target, value)} onBuscaDivergencias={handleBuscaDivergencias} />
+            <FiltroListaDivergencias
+                Filtros={Filtros}
+                onChangeFiltro={(target, value) => handleChangeFiltro(target, value)}
+                onBuscaDivergencias={handleBuscaDivergencias}
+                Permissao={Permissao}
+            />
             <Panel Title="Enviar Notificações">
                 <div>{RenderizaDivergencias()}</div>
                 <br />
@@ -1635,7 +1425,6 @@ function NotificarDivergencias() {
         </>
     );
 }
-
 function DivergenciasUsuario({ Usuario, Divergencias, EmailCopia, Observacao, CheckEnvio, onChangeDivergencias }) {
     var id = makeid(6);
 
@@ -1746,16 +1535,16 @@ function DivergenciasUsuario({ Usuario, Divergencias, EmailCopia, Observacao, Ch
                 <div>
                     <div className="row">
                         <div className="col-md-12">
-                            <label htmlFor={"EmailsCopia_" + id} style={{ width: "100%" }}>
+                            <label htmlFor={"EmailCopia_" + id} style={{ width: "100%" }}>
                                 E-mails em cópia:
                             </label>
                             <input
                                 type="text"
-                                id={"EmailsCopia_" + id}
+                                id={"EmailCopia_" + id}
                                 className="form-control"
                                 value={EmailCopia}
                                 onChange={(e) => {
-                                    onChangeDivergencias(Usuario, "EmailsCopia", e.target.value);
+                                    onChangeDivergencias(Usuario, "EmailCopia", e.target.value);
                                 }}
                             />
                         </div>
@@ -1778,5 +1567,677 @@ function DivergenciasUsuario({ Usuario, Divergencias, EmailCopia, Observacao, Ch
                 </div>
             )}
         </Panel>
+    );
+}
+
+
+// DASHBOARDS
+function DashboardDivergencias({ Permissao }) {
+    const [Filtros, setFiltros] = useState({
+        FiltroObra: "Todos",
+        FiltroUsuario: "Todos",
+        FiltroTipoDeMovimento: "Todos",
+        FiltroPeriodo: "Lancamento",
+        FiltroPeriodoInicio: moment().subtract(1, "year"),
+        FiltroPeriodoFim: moment(),
+        FiltroStatus: "Ativo"
+    });
+
+    const [Divergencias, setDivergencias] = useState([]);
+
+    function handleChangeFiltro(target, value) {
+        setFiltros((prevFiltros) => ({
+            ...prevFiltros,
+            [target]: value
+        }));
+    }
+
+    async function handleBuscaDivergencias() {
+        var filtros = {
+            Obra: Filtros.FiltroObra,
+            Usuario: Filtros.FiltroUsuario,
+            TipoDeMovimento: Filtros.FiltroTipoDeMovimento,
+            Periodo: Filtros.FiltroPeriodo,
+            PeriodoInicio: Filtros.FiltroPeriodoInicio,
+            PeriodoFim: Filtros.FiltroPeriodoFim,
+            Status: Filtros.FiltroStatus
+        };
+
+        setDivergencias(await BuscaDivergencias(filtros));
+    }
+
+    return (
+        <div>
+            <FiltroListaDivergencias
+                Filtros={Filtros}
+                onChangeFiltro={(target, value) => handleChangeFiltro(target, value)}
+                onBuscaDivergencias={handleBuscaDivergencias}
+                Permissao={Permissao}
+            />
+
+            <Panel Title={"Gráficos"}>
+                {Divergencias.length > 0 && (
+                    <>
+                        <div className="row">
+                            <div className="col-md-2"></div>
+                            <div className="col-md-8">
+                                <ComponenteChartQuantidadePorDataDeEmissao Divergencias={Divergencias} />
+                            </div>
+                        </div>
+                        <div className="row">
+                            <div className="col-md-4">
+                                <ComponenteChartQuantidadePorCategoria Divergencias={Divergencias} />
+                            </div>
+                            <div className="col-md-4">
+                                <ComponenteChartQuantidadePorUsuario Divergencias={Divergencias} />
+                            </div>
+                        </div>
+                    </>
+                )}
+            </Panel>
+        </div>
+    );
+}
+function ComponenteChartQuantidadePorCategoria({ Divergencias }) {
+    useEffect(() => {
+        ChartQuantidadePorCategoria = new Chart(document.getElementById("DivChartQuantidadePorCategoria"), {
+            type: "pie",
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false,
+                        labels: {
+                            textAlign: "left"
+                        }
+                    }
+                }
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        if (ChartQuantidadePorCategoria) {
+            AtualizaChart();
+        }
+    }, [Divergencias]);
+
+    function AtualizaChart() {
+        var [labels, data, backgroundColor] = ExtraiQuantidadePorCategoria();
+
+        ChartQuantidadePorCategoria.data = {
+            labels: labels,
+            datasets: [
+                {
+                    label: "# de Divergências",
+                    data: data,
+                    backgroundColor: backgroundColor
+                }
+            ]
+        };
+        ChartQuantidadePorCategoria.update();
+    }
+
+    function ExtraiQuantidadePorCategoria() {
+        var listCategorias = [];
+
+        for (let i = 0; i < Divergencias.length; i++) {
+            const Divergencia = Divergencias[i];
+            var found = listCategorias.find((e) => e.label == Divergencia.CATEGORIA);
+            if (!found) {
+                listCategorias.push({
+                    label: Divergencia.CATEGORIA,
+                    value: 1
+                });
+            } else {
+                found.value++;
+            }
+        }
+
+        var labels = [];
+        var values = [];
+        var backgroundColor = [];
+        for (let i = 0; i < listCategorias.length && i < 10; i++) {
+            const Categoria = listCategorias[i];
+            labels.push(Categoria.label);
+            values.push(Categoria.value);
+            backgroundColor.push(colors[i]);
+        }
+
+        return [labels, values, backgroundColor];
+    }
+
+    return (
+        <div className="card" style={{ border: "2px black solid" }}>
+            <div style={{ width: "50%", margin: "auto" }}>
+                <canvas id="DivChartQuantidadePorCategoria"></canvas>
+            </div>
+            <div className="card-body" style={{ backgroundColor: "lightgray" }}>
+                <h3 className="card-title">Quantidade Por Categoria</h3>
+                <p className="card-text">TOP 10 Categorias com mais Divergências.</p>
+            </div>
+        </div>
+    );
+}
+function ComponenteChartQuantidadePorUsuario({ Divergencias }) {
+    useEffect(() => {
+        ChartQuantidadePorUsuario = new Chart(document.getElementById("DivChartQuantidadePorUsuario"), {
+            type: "pie",
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false,
+                        labels: {
+                            textAlign: "left"
+                        }
+                    }
+                }
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        if (ChartQuantidadePorUsuario) {
+            AtualizaChart();
+        }
+    }, [Divergencias]);
+
+    function AtualizaChart() {
+        var [labels, data, backgroundColor] = ExtraiQuantidadePorCategoria();
+
+        ChartQuantidadePorUsuario.data = {
+            labels: labels,
+            datasets: [
+                {
+                    label: "# de Divergências",
+                    data: data,
+                    backgroundColor: backgroundColor
+                }
+            ]
+        };
+        ChartQuantidadePorUsuario.update();
+    }
+
+    function ExtraiQuantidadePorCategoria() {
+        var listCategorias = [];
+        for (const Divergencia of Divergencias) {
+            var found = listCategorias.find((e) => e.label == Divergencia.CODUSUARIO);
+            if (!found) {
+                listCategorias.push({
+                    label: Divergencia.CODUSUARIO,
+                    value: 1
+                });
+            } else {
+                found.value++;
+            }
+        }
+
+        listCategorias.sort((a, b) => a.value - b.value);
+
+        var labels = [];
+        var values = [];
+        var backgroundColor = [];
+        for (let i = 0; i < listCategorias.length && i < 10; i++) {
+            const Categoria = listCategorias[i];
+            labels.push(Categoria.label);
+            values.push(Categoria.value);
+            backgroundColor.push(colors[i]);
+        }
+
+        return [labels, values, backgroundColor];
+    }
+
+    return (
+        <div className="card" style={{ border: "2px black solid" }}>
+            <div style={{ width: "50%", margin: "auto" }}>
+                <canvas id="DivChartQuantidadePorUsuario"></canvas>
+            </div>
+            <div className="card-body" style={{ backgroundColor: "lightgray" }}>
+                <h3 className="card-title">Quantidade Por Usuário</h3>
+                <p className="card-text">TOP 10 usuários com mais Divergências.</p>
+            </div>
+        </div>
+    );
+}
+function ComponenteChartQuantidadePorDataDeEmissao({ Divergencias }) {
+    useEffect(() => {
+        ChartQuantidadePorDataDeEmissao = new Chart(document.getElementById("DivChartQuantidadePorEmissao"), {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false,
+                        labels: {
+                            textAlign: "left"
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function (data) {
+                                console.log(data[0].raw.x);
+                                return TraduzMes(data[0].raw.x);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: "time",
+                        time: {
+                            unit: "month"
+                        },
+                        ticks: {
+                            callback: function (value, index, ticks) {
+                                return TraduzMes(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        if (ChartQuantidadePorDataDeEmissao) {
+            AtualizaChart();
+        }
+    }, [Divergencias]);
+
+    function AtualizaChart() {
+        var [data, backgroundColor] = ExtraiQuantidadePorCategoria();
+
+        ChartQuantidadePorDataDeEmissao.data = {
+            datasets: [
+                {
+                    label: "# de Divergências",
+                    data: data,
+                    backgroundColor: backgroundColor,
+                    fill: true
+                }
+            ]
+        };
+        ChartQuantidadePorDataDeEmissao.update();
+    }
+
+    function ExtraiQuantidadePorCategoria() {
+        var labels = [];
+        var data = [];
+        var i = -1;
+        for (const Divergencia of Divergencias) {
+            var Mes = Divergencia.DATAEMISSAO.split(" ")[0].split("-")[1];
+            var Ano = Divergencia.DATAEMISSAO.split(" ")[0].split("-")[0];
+            var label = Ano + "-" + Mes + "-01";
+            var found = labels.find((e) => e.label == label);
+
+            if (!found) {
+                i++;
+                labels.push({
+                    ID: i,
+                    label: label
+                });
+                data.push({
+                    ID: i,
+                    value: 1
+                });
+            } else {
+                data[found.ID].value++;
+            }
+        }
+
+        var array2 = [];
+
+        for (const label of labels) {
+            array2.push({
+                x: BuscaEpoch(label.label),
+                y: data[label.ID].value
+            });
+        }
+
+        array2 = array2.sort((a, b) => {
+            if (a.x > b.x) {
+                return 1;
+            } else if (b.x > a.x) {
+                return -1;
+            } else {
+                return 0;
+            }
+        });
+
+        var values = [];
+        var backgroundColor = [];
+        var i = 0;
+        for (const Categoria of array2) {
+            values.push(Categoria);
+            backgroundColor.push(colors[i]);
+            i++;
+        }
+
+        return [values, backgroundColor];
+    }
+
+    return (
+        <div className="card" style={{ border: "2px black solid" }}>
+            <div style={{ width: "100%", margin: "auto" }}>
+                <canvas id="DivChartQuantidadePorEmissao"></canvas>
+            </div>
+            <div className="card-body" style={{ backgroundColor: "lightgray" }}>
+                <h3 className="card-title">Quantidade Por Data de Emissão</h3>
+                <p className="card-text"></p>
+            </div>
+        </div>
+    );
+}
+
+
+// UTILS
+function Item({ ItemIndex, CodigoProduto, Produto, Quantidade, ValorUnit, CODUND }) {
+    return (
+        <tr>
+            <td>
+                <span>{ItemIndex + 1}</span>
+            </td>
+            <td>
+                <span>{CodigoProduto + " - " + Produto}</span>
+            </td>
+            <td>{Quantidade + " " + CODUND}</td>
+            <td>
+                <MoneySpan value={ValorUnit} QuantidadeDeCasasDecimais={4} />
+            </td>
+            <td>
+                <MoneySpan value={Quantidade * ValorUnit} />
+            </td>
+        </tr>
+    );
+}
+function Panel({ children, Title, HideAble = false, IniciaFechado = false }) {
+    const [BodyShown, setBodyShown] = useState(!IniciaFechado);
+
+    function handleClickDetails(e) {
+        if (HideAble) {
+            if (BodyShown) {
+                $(e.target).closest(".panel").find(".panel-body:first").slideUp();
+            } else {
+                $(e.target).closest(".panel").find(".panel-body:first").slideDown();
+            }
+
+            setBodyShown(!BodyShown);
+        }
+    }
+
+    return (
+        <div className="panel panel-primary">
+            <div
+                className="panel-heading"
+                onClick={(e) => {
+                    if (HideAble) {
+                        handleClickDetails(e);
+                    }
+                }}
+            >
+                {HideAble == true && <div className={"details " + (BodyShown ? "detailsHide" : "detailsShow")}></div>}
+
+                <h4 className="panel-title" style={{ display: "inline-block", verticalAlign: "middle" }}>
+                    {Title}
+                </h4>
+            </div>
+            <div className="panel-body" style={{ display: IniciaFechado ? "none" : "block" }}>
+                {children}
+            </div>
+        </div>
+    );
+}
+function CPFCNPJInput({ value, type = "CPF/CNPJ", onChange }) {
+    function handleChange(e) {
+        var valor = e.target.value;
+        valor = valor.replace(/\D/g, "");
+        valor = valor.split("");
+
+        if (valor.length <= 11) {
+            valor = maskCPF(valor);
+        } else {
+            valor = maskCNPJ(valor);
+        }
+
+        onChange(valor);
+    }
+
+    function handleBlur(e) {
+        var valor = e.target.value;
+        valor = valor.replace(/\D/g, "");
+        valor = valor.split("");
+
+        if (valor.length < 11) {
+            if (!validaCPF(maskCPF(valor))) {
+                FLUIGC.toast({
+                    title: "CPF Inválido!",
+                    message: "",
+                    type: "warning"
+                });
+                onChange("");
+            } else {
+                if (!validarCNPJ(maskCNPJ(valor))) {
+                    FLUIGC.toast({
+                        title: "CNPJ Inválido!",
+                        message: "",
+                        type: "warning"
+                    });
+                    onChange("");
+                }
+            }
+        }
+    }
+
+    function maskCPF(value) {
+        var formatValue = "";
+        //098.560.269-46
+        //012 345 678 910
+        for (const [i, char] of value.entries()) {
+            if (i == 3 || i == 6) {
+                formatValue += ".";
+            } else if (i == 9) {
+                formatValue += "-";
+            }
+
+            if (i < 11) {
+                formatValue += char;
+            }
+        }
+
+        return formatValue;
+    }
+    function maskCNPJ(value) {
+        var formatValue = "";
+        for (const [i, char] of value.entries()) {
+            if (i == 2 || i == 5) {
+                formatValue += ".";
+            } else if (i == 8) {
+                formatValue += "/";
+            } else if (i == 12) {
+                formatValue += "-";
+            }
+
+            if (i < 14) {
+                formatValue += char;
+            }
+        }
+
+        return formatValue;
+    }
+
+    return <input type="text" className="form-control" value={value} onChange={handleChange} onBlur={handleBlur} />;
+}
+class ProdutoInput extends React.Component {
+    render() {
+        var options = Produtos;
+
+        return (
+            <div>
+                <antd.AutoComplete
+                    style={{ width: "100%" }}
+                    value={this.props.value}
+                    onChange={(e) => this.props.onChange(e)}
+                    options={options}
+                    filterOption={(inputValue, option) => option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1}
+                />
+            </div>
+        );
+    }
+}
+class DepartamentoInput extends React.Component {
+    render() {
+        return (
+            <div>
+                <antd.Select
+                    options={Departamentos}
+                    showSearch
+                    value={this.props.value}
+                    filterOption={(input, option) => {
+                        if (option.children) {
+                            return option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
+                        } else if (option.label) {
+                            return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
+                        }
+                    }}
+                    onChange={(e) => this.props.onChange(e)}
+                    style={{ width: "100%" }}
+                />
+            </div>
+        );
+    }
+}
+class FilialInput extends React.Component {
+    render() {
+        var optionsFiliais = [];
+        for (const Filial of Filiais) {
+            optionsFiliais.push({
+                label: Filial.CODFILIAL + " - " + Filial.FILIAL,
+                value: Filial.CODFILIAL + " - " + Filial.FILIAL
+            });
+        }
+
+        return (
+            <div>
+                <antd.Select
+                    options={optionsFiliais}
+                    showSearch
+                    value={this.props.value}
+                    filterOption={(input, option) => {
+                        if (option.children) {
+                            return option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
+                        } else if (option.label) {
+                            return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0 ? true : false;
+                        }
+                    }}
+                    onChange={(e) => this.props.onChange(e)}
+                    style={{ width: "100%" }}
+                />
+            </div>
+        );
+    }
+}
+function MoneySpan({ value, QuantidadeDeCasasDecimais = 2 }) {
+    value = FormataValorParaMoeda(value);
+
+    function FormataValorParaMoeda(valor) {
+        if (isNaN(valor)) {
+            return " - ";
+        }
+
+        if (valor) {
+            valor = parseFloat(valor);
+        }
+
+        return valor.toLocaleString("pt-br", {
+            minimumFractionDigits: QuantidadeDeCasasDecimais,
+            maximumFractionDigits: QuantidadeDeCasasDecimais
+        });
+    }
+
+    return (
+        <div style={{ display: "inline-block" }}>
+            R$<span>{value.split(",")[0]},</span>
+            <span style={{ fontSize: "80%" }}>{value.split(",")[1]}</span>
+        </div>
+    );
+}
+function MoneyInput({ value, onChange, QuantidadeDeCasasDecimais = 2, className, readOnly }) {
+    function formatValue(value) {
+        if (value) {
+            value = value.split(".");
+            var int = value[0].toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+            var decimais = value[1] != undefined ? "," + value[1] : "";
+
+            return "R$ " + int + decimais;
+        } else {
+            return "R$ ";
+        }
+    }
+
+    function unformatValue(value) {
+        value = value.split(".").join("").split(",");
+        var inteiros = removeNaoNumericos(value[0]);
+        var decimais = value[1];
+
+        if (!inteiros && !decimais) {
+            return "";
+        } else {
+            if (decimais != undefined) {
+                decimais = "." + removeNaoNumericos(decimais);
+            } else {
+                decimais = "";
+            }
+
+            value = inteiros + decimais;
+            return value;
+        }
+    }
+
+    function removeNaoNumericos(value) {
+        if (value != undefined && value != null) {
+            return value.replace(/[^0-9]/g, "");
+        } else {
+            return false;
+        }
+    }
+
+    function handleChange(e) {
+        onChange(unformatValue(e.target.value));
+    }
+
+    function handleBlur(e) {
+        var value = e.target.value.split(",");
+        var inteiros = removeNaoNumericos(value[0]);
+        var decimais = removeNaoNumericos(value[1]);
+
+        if (!inteiros && !decimais) {
+            onChange("");
+        } else {
+            if (decimais != false) {
+                decimais = (decimais + "0000000000").substring(0, QuantidadeDeCasasDecimais);
+            } else {
+                decimais = "0000000000".substring(0, QuantidadeDeCasasDecimais);
+            }
+            value = inteiros + "." + decimais;
+
+            onChange(value);
+        }
+    }
+
+    return (
+        <input type="text" value={formatValue(value)} className={"form-control " + className} readOnly={readOnly} placeholder="R$" onChange={handleChange} onBlur={handleBlur} />
     );
 }

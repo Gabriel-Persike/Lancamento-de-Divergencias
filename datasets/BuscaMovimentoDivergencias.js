@@ -34,7 +34,7 @@ function createDataset(fields, constraints, sortFields) {
             TMOV.SERIE,\
             TMOV.DATAEMISSAO,\
             TMOV.DATASAIDA,\
-            TMOV.CODUSUARIO,\
+            TMOV.USUARIOCRIACAO as CODUSUARIO,\
             TMOV.VALORBRUTO,\
             FCFO.CGCCFO,\
             FCFO.NOME as FORNECEDOR\
