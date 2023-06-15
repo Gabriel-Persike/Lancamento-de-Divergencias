@@ -170,7 +170,7 @@ function BuscaItensMovimentoRM(CODCOLIGADA, IDMOV) {
 	});
 }
 
-function BuscaDivergencias(Filtros) {
+function BuscaDivergencias(Filtros, Permissao) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			var Divergencias = await BuscaListaDeDivergencias();
@@ -234,7 +234,7 @@ function BuscaDivergencias(Filtros) {
 
 	function AplicaFiltroNasDivergencias(Divergencias, Filtros) {
 		return Divergencias.filter(Divergencia => {
-			if (ValidaFiltros(Divergencia, Filtros)) {
+			if (ValidaFiltros(Divergencia, Filtros) && ValidaPermissoes(Divergencia, Permissao)) {
 				return true;
 			}
 			else {
@@ -269,6 +269,28 @@ function BuscaDivergencias(Filtros) {
 		}
 
 		return true;
+	}
+
+	function ValidaPermissoes(Divergencia, Permissao){
+		if (Permissao.Permissao == "Geral" || Permissao.Permissao == "Visualizacao") {
+			return true;
+		}
+		else if(Permissao.Permissao == "VisualizacaoObra"){
+			if (Permissao.Obras.includes(Divergencia.OBRA)) {
+				return true;
+			}
+			else{
+				return false;
+			}
+		}
+		else if(Permissao.Permissao == "VisualizacaoUsuario"){
+			if (Divergencia.CODUSUARIO == WCMAPI.userCode) {
+				return true;
+			}
+			else{
+				return false;
+			}
+		}
 	}
 }
 
@@ -575,7 +597,6 @@ async function NotificaDivergencias(Divergencias) {
 	LoadingEnvioDeEmail.hide();
 }
 
-
 async function AlteraStatusEmailParaEnviado(Divergencias) {
 	for (const Divergencia of Divergencias) {
 		await ExecutaDataset("DatasetDivergenciasContabilidade", null, [
@@ -632,10 +653,10 @@ function EnviaEmail(CorpoEmail, usuario, emails) {
 
 }
 
-function AbreModalDetalhes(Divergencia, onBuscaDivergencias) {
+function AbreModalDetalhes(Divergencia, onBuscaDivergencias, Permissao) {
 	//Abre a Modal
 	var actions = [];
-	if (Divergencia.STATUS != "false") {
+	if (Divergencia.STATUS != "false" && Permissao.Permissao == "Geral") {
 		actions.push({
 			"label": "Cancelar",
 			"classType": "btn-danger",
@@ -657,7 +678,7 @@ function AbreModalDetalhes(Divergencia, onBuscaDivergencias) {
 		if (err) {
 		} else {
 			//Apos criar a Modal inicia o <ModalDetalhes/> dentro da Modal
-			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia, onBuscaDivergencias: onBuscaDivergencias }), document.querySelector("#rootModalDetalhes"));
+			ReactDOM.render(React.createElement(ModalDetalhes, { Divergencia: Divergencia, onBuscaDivergencias: onBuscaDivergencias,Permissao:Permissao }), document.querySelector("#rootModalDetalhes"));
 		}
 	});
 }

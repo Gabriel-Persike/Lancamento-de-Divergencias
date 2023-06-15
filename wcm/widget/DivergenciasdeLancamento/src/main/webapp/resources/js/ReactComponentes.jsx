@@ -7,7 +7,6 @@ const DatePicker = antd.DatePicker;
 var ChartQuantidadePorCategoria = null;
 var ChartQuantidadePorUsuario = null;
 var ChartQuantidadePorDataDeEmissao = null;
-
 const colors = [
     "#FF0000", // Red
     "#00FF00", // Green
@@ -42,7 +41,7 @@ const colors = [
 ];
 
 function AppRoot() {
-    const [Permissao, setPermissao] = useState({ Permissao: null, Obras: [] });
+    const [Permissao, setPermissao] = useState({ Permissao: "VisualizacaoUsuario", Obras: [] });
 
     useEffect(() => {
         BuscaPermissao();
@@ -56,14 +55,21 @@ function AppRoot() {
 
     return (
         <ErrorBoundary>
-            <button className="btn btn-primary" onClick={BuscaPermissao}>
-                Atualiza Permissao
-            </button>
             <div id="divCollapse">
                 <ul id="coltabs" className="nav nav-tabs nav-justified nav-pills" role="tablist" style={{ paddingBottom: "0px", width: "100%" }}>
+                    <li className="collapse-tab active">
+                        <a href="#tabListaDivergencias" role="tab" id="atabListaDivergencias" data-toggle="tab" aria-expanded="true" className="tab">
+                            Lista de Divergências
+                        </a>
+                    </li>
+                    <li className="collapse-tab">
+                        <a href="#tabDashboards" role="tab" id="atabDashboards" data-toggle="tab" aria-expanded="true" className="tab">
+                            Dashboards
+                        </a>
+                    </li>
                     {Permissao.Permissao == "Geral" && (
                         <>
-                            <li className="collapse-tab active">
+                            <li className="collapse-tab ">
                                 <a href="#tabLancarDivergencias" role="tab" id="atabLancarDivergencias" data-toggle="tab" aria-expanded="true" className="tab">
                                     Lançar Divergência
                                 </a>
@@ -75,21 +81,17 @@ function AppRoot() {
                             </li>
                         </>
                     )}
-                    <li className="collapse-tab">
-                        <a href="#tabListaDivergencias" role="tab" id="atabListaDivergencias" data-toggle="tab" aria-expanded="true" className="tab">
-                            Lista de Divergências
-                        </a>
-                    </li>
-                    <li className="collapse-tab">
-                        <a href="#tabDashboards" role="tab" id="atabDashboards" data-toggle="tab" aria-expanded="true" className="tab">
-                            Dashboards
-                        </a>
-                    </li>
                 </ul>
                 <div className="tab-content">
+                    <div className="tab-pane active" id="tabListaDivergencias">
+                        <ListaDivergencias Permissao={Permissao} />
+                    </div>
+                    <div className="tab-pane" id="tabDashboards">
+                        <DashboardDivergencias Permissao={Permissao} />
+                    </div>
                     {Permissao.Permissao == "Geral" && (
                         <>
-                            <div className="tab-pane active" id="tabLancarDivergencias">
+                            <div className="tab-pane" id="tabLancarDivergencias">
                                 <Lancamento />
                             </div>
                             <div className="tab-pane" id="tabEnviarEmails">
@@ -97,18 +99,11 @@ function AppRoot() {
                             </div>
                         </>
                     )}
-                    <div className="tab-pane" id="tabListaDivergencias">
-                        <ListaDivergencias Permissao={Permissao} />
-                    </div>
-                    <div className="tab-pane" id="tabDashboards">
-                        <DashboardDivergencias Permissao={Permissao} />
-                    </div>
                 </div>
             </div>
         </ErrorBoundary>
     );
 }
-
 class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
@@ -142,8 +137,7 @@ class ErrorBoundary extends React.Component {
         return this.props.children;
     }
 }
-
-function FiltroListaDivergencias({ onBuscaDivergencias, Permissao }) {
+function FiltroListaDivergencias({ onBuscaDivergencias, Permissao, OverloadFiltros = {} }) {
     const [Filtros, setFiltros] = useState({
         FiltroObra: "Todos",
         FiltroUsuario: "Todos",
@@ -151,7 +145,8 @@ function FiltroListaDivergencias({ onBuscaDivergencias, Permissao }) {
         FiltroPeriodo: "Lancamento",
         FiltroPeriodoInicio: moment().subtract(1, "year"),
         FiltroPeriodoFim: moment(),
-        FiltroStatus: "Ativo"
+        FiltroStatus: "Ativo",
+        FiltroEMAIL_PEND: OverloadFiltros.EMAIL_PEND ? OverloadFiltros.EMAIL_PEND : false
     });
 
     const [OptionsObras, setOptionsObras] = useState([]);
@@ -161,10 +156,6 @@ function FiltroListaDivergencias({ onBuscaDivergencias, Permissao }) {
     useEffect(() => {
         CriaListaNoFiltroPorObra();
         CriaListaNoFiltroPorUsuario();
-    }, []);
-
-    useEffect(() => {
-        CriaListaNoFiltroPorObra();
     }, [Permissao]);
 
     function handleChangeFiltro(target, value) {
@@ -193,8 +184,8 @@ function FiltroListaDivergencias({ onBuscaDivergencias, Permissao }) {
     }
 
     async function CriaListaNoFiltroPorUsuario() {
-        if (Permissao == "VisualizacaoUsuario") {
-            setOptionsUsuarios({ label: WCMAPI.userCode, value: WCMAPI.userCode });
+        if (Permissao.Permissao == "VisualizacaoUsuario") {
+            setOptionsUsuarios([{ label: WCMAPI.userCode, value: WCMAPI.userCode }]);
         } else {
             var usuarios = await ExecutaDataset("colleague", ["colleagueId"], [], null);
             usuarios = usuarios.map((e) => {
@@ -213,10 +204,11 @@ function FiltroListaDivergencias({ onBuscaDivergencias, Permissao }) {
             Periodo: Filtros.FiltroPeriodo,
             PeriodoInicio: Filtros.FiltroPeriodoInicio,
             PeriodoFim: Filtros.FiltroPeriodoFim,
-            Status: Filtros.FiltroStatus
+            Status: Filtros.FiltroStatus,
+            EMAIL_PEND: Filtros.FiltroEMAIL_PEND
         };
 
-        onBuscaDivergencias(await BuscaDivergencias(filtros));
+        onBuscaDivergencias(await BuscaDivergencias(filtros, Permissao));
     }
 
     return (
@@ -232,7 +224,9 @@ function FiltroListaDivergencias({ onBuscaDivergencias, Permissao }) {
                         onChange={(e) => handleChangeFiltro("FiltroObra", e)}
                     >
                         {OptionsObras.map((e) => (
-                            <AntdOption value={e.value}>{e.label}</AntdOption>
+                            <AntdOption key={e.value} value={e.value}>
+                                {e.label}
+                            </AntdOption>
                         ))}
                     </Select>
                 </div>
@@ -242,10 +236,15 @@ function FiltroListaDivergencias({ onBuscaDivergencias, Permissao }) {
                         style={{ width: "100%" }}
                         showSearch
                         filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
-                        options={OptionsUsuarios}
                         value={Filtros.FiltroUsuario}
                         onChange={(e) => handleChangeFiltro("FiltroUsuario", e)}
-                    />
+                    >
+                        {OptionsUsuarios.map((e) => (
+                            <AntdOption key={e.value} value={e.value}>
+                                {e.label}
+                            </AntdOption>
+                        ))}
+                    </Select>
                 </div>
                 <div className="col-md-4">
                     <b>Tipo de Movimento:</b>
@@ -838,20 +837,34 @@ function LancamentoDivergencia({ CategoriaDivergencia, onChangeCategoriaDivergen
     );
 }
 
-
 //  LISTAR DIVERGENCIAS
-function ListaDivergencias({ onBuscaDivergencias, Permissao }) {
+function ListaDivergencias({ Permissao }) {
     const [Divergencias, setDivergencias] = useState([]);
 
     useEffect(() => {
         IniciaDataTables();
-        handleBuscaDivergencias();
     }, []);
 
     useEffect(() => {
         //Toda vez que o componente foi atualizado passa as Divergencias para a DataTables
         AtualizaDataTables();
     }, [Divergencias]);
+
+    useEffect(() => {
+        DataTableDivergencias.off("draw");
+        DataTableDivergencias.on("draw", { onBuscaDivergencias: handleBuscaDivergencias, Permissao: Permissao }, (e) => {
+            FLUIGC.popover(".bs-docs-popover-hover", { trigger: "hover", placement: "auto" });
+            $(".btnShowDetails").off("click");
+            $(".btnShowDetails").on("click", function () {
+                //Cria a trigger no botão Detalhes que ao ser clicado abre a Modal Detalhes
+                var tr = $(this).closest("tr");
+                var row = DataTableDivergencias.row(tr);
+                var values = row.data();
+                console.log(e.data.Permissao);
+                AbreModalDetalhes(values, e.data.onBuscaDivergencias, e.data.Permissao);
+            });
+        });
+    }, [Permissao]);
 
     function IniciaDataTables() {
         //Ao Criar o componente Inicia a DataTables
@@ -954,7 +967,7 @@ function ListaDivergencias({ onBuscaDivergencias, Permissao }) {
         });
 
         //Toda vez que o componente for atualizado Cria a trigger on("draw") na DataTables
-        DataTableDivergencias.on("draw", { onBuscaDivergencias: onBuscaDivergencias }, (e) => {
+        DataTableDivergencias.on("draw", { onBuscaDivergencias: handleBuscaDivergencias, Permissao: getPermissao }, (e) => {
             FLUIGC.popover(".bs-docs-popover-hover", { trigger: "hover", placement: "auto" });
             $(".btnShowDetails").off("click");
             $(".btnShowDetails").on("click", function () {
@@ -962,31 +975,28 @@ function ListaDivergencias({ onBuscaDivergencias, Permissao }) {
                 var tr = $(this).closest("tr");
                 var row = DataTableDivergencias.row(tr);
                 var values = row.data();
-                AbreModalDetalhes(values, e.data.onBuscaDivergencias);
+                console.log(e.data.Permissao);
+                AbreModalDetalhes(values, e.data.onBuscaDivergencias, e.data.Permissao());
             });
         });
     }
 
-    function AtualizaDataTables(){
-        DataTableDivergencias.clear();
-        DataTableDivergencias.rows.add(Divergencias);
-        setTimeout(() => {
-            DataTableDivergencias.columns.adjust().draw();
-        }, 200);
+    function getPermissao() {
+        return Permissao;
     }
 
-    async function handleBuscaDivergencias() {
-        var filtros = {
-            Obra: Filtros.FiltroObra,
-            Usuario: Filtros.FiltroUsuario,
-            TipoDeMovimento: Filtros.FiltroTipoDeMovimento,
-            Periodo: Filtros.FiltroPeriodo,
-            PeriodoInicio: Filtros.FiltroPeriodoInicio,
-            PeriodoFim: Filtros.FiltroPeriodoFim,
-            Status: Filtros.FiltroStatus
-        };
+    function AtualizaDataTables() {
+        if (Divergencias.length > 0) {
+            DataTableDivergencias.clear();
+            DataTableDivergencias.rows.add(Divergencias);
+            setTimeout(() => {
+                DataTableDivergencias.columns.adjust().draw();
+            }, 200);
+        }
+    }
 
-        setDivergencias(await BuscaDivergencias(filtros));
+    async function handleBuscaDivergencias(e) {
+        setDivergencias(e);
     }
 
     return (
@@ -1250,15 +1260,17 @@ class ModalDetalhes extends React.Component {
                         </label>
                         <br />
 
-                        {this.props.Divergencia.STATUS != "false" ? (
+                        {this.props.Divergencia.STATUS != "false" && this.props.Permissao.Permissao == "Geral" ? (
                             <textarea
                                 rows="4"
                                 onChange={(e) => this.setState({ MotivoCancelamento: e.target.value })}
                                 value={this.state.MotivoCancelamento}
                                 className="form-control form-control-danger"
                             />
-                        ) : (
+                        ) : this.props.Divergencia.STATUS == "false" ? (
                             <span>{this.props.Divergencia.MOTIVO_CANC}</span>
+                        ) : (
+                            <div></div>
                         )}
                     </div>
                 </Panel>
@@ -1267,40 +1279,11 @@ class ModalDetalhes extends React.Component {
     }
 }
 
-
 // ENVIAR EMAIL
 function NotificarDivergencias({ Permissao }) {
-    const [Filtros, setFiltros] = useState({
-        FiltroObra: "Todos",
-        FiltroUsuario: "Todos",
-        FiltroTipoDeMovimento: "Todos",
-        FiltroPeriodo: "Lancamento",
-        FiltroPeriodoInicio: moment().subtract(1, "year"),
-        FiltroPeriodoFim: moment(),
-        FiltroStatus: "Todos"
-    });
     const [Divergencias, setDivergencias] = useState([]);
 
-    function handleChangeFiltro(target, value) {
-        setFiltros((prevFiltros) => ({
-            ...prevFiltros,
-            [target]: value
-        }));
-    }
-
-    async function handleBuscaDivergencias() {
-        var filtros = {
-            Obra: Filtros.FiltroObra,
-            Usuario: Filtros.FiltroUsuario,
-            TipoDeMovimento: Filtros.FiltroTipoDeMovimento,
-            Periodo: Filtros.FiltroPeriodo,
-            PeriodoInicio: Filtros.FiltroPeriodoInicio,
-            PeriodoFim: Filtros.FiltroPeriodoFim,
-            Status: Filtros.FiltroStatus,
-            EMAIL_PEND: true
-        };
-
-        var Divergencias = await BuscaDivergencias(filtros);
+    async function handleBuscaDivergencias(Divergencias) {
         Divergencias = await AgrupaDivergenciasPorUsuario(Divergencias);
         setDivergencias(Divergencias);
 
@@ -1384,7 +1367,6 @@ function NotificarDivergencias({ Permissao }) {
         }
 
         await NotificaDivergencias(list);
-        handleBuscaDivergencias();
     }
 
     function RenderizaDivergencias() {
@@ -1409,12 +1391,7 @@ function NotificarDivergencias({ Permissao }) {
 
     return (
         <>
-            <FiltroListaDivergencias
-                Filtros={Filtros}
-                onChangeFiltro={(target, value) => handleChangeFiltro(target, value)}
-                onBuscaDivergencias={handleBuscaDivergencias}
-                Permissao={Permissao}
-            />
+            <FiltroListaDivergencias onBuscaDivergencias={handleBuscaDivergencias} Permissao={Permissao} OverloadFiltros={{ EMAIL_PEND: true }} />
             <Panel Title="Enviar Notificações">
                 <div>{RenderizaDivergencias()}</div>
                 <br />
@@ -1570,50 +1547,17 @@ function DivergenciasUsuario({ Usuario, Divergencias, EmailCopia, Observacao, Ch
     );
 }
 
-
 // DASHBOARDS
 function DashboardDivergencias({ Permissao }) {
-    const [Filtros, setFiltros] = useState({
-        FiltroObra: "Todos",
-        FiltroUsuario: "Todos",
-        FiltroTipoDeMovimento: "Todos",
-        FiltroPeriodo: "Lancamento",
-        FiltroPeriodoInicio: moment().subtract(1, "year"),
-        FiltroPeriodoFim: moment(),
-        FiltroStatus: "Ativo"
-    });
-
     const [Divergencias, setDivergencias] = useState([]);
 
-    function handleChangeFiltro(target, value) {
-        setFiltros((prevFiltros) => ({
-            ...prevFiltros,
-            [target]: value
-        }));
-    }
-
-    async function handleBuscaDivergencias() {
-        var filtros = {
-            Obra: Filtros.FiltroObra,
-            Usuario: Filtros.FiltroUsuario,
-            TipoDeMovimento: Filtros.FiltroTipoDeMovimento,
-            Periodo: Filtros.FiltroPeriodo,
-            PeriodoInicio: Filtros.FiltroPeriodoInicio,
-            PeriodoFim: Filtros.FiltroPeriodoFim,
-            Status: Filtros.FiltroStatus
-        };
-
-        setDivergencias(await BuscaDivergencias(filtros));
+    async function handleBuscaDivergencias(e) {
+        setDivergencias(e);
     }
 
     return (
         <div>
-            <FiltroListaDivergencias
-                Filtros={Filtros}
-                onChangeFiltro={(target, value) => handleChangeFiltro(target, value)}
-                onBuscaDivergencias={handleBuscaDivergencias}
-                Permissao={Permissao}
-            />
+            <FiltroListaDivergencias onBuscaDivergencias={handleBuscaDivergencias} Permissao={Permissao} />
 
             <Panel Title={"Gráficos"}>
                 {Divergencias.length > 0 && (
@@ -1874,59 +1818,87 @@ function ComponenteChartQuantidadePorDataDeEmissao({ Divergencias }) {
     }
 
     function ExtraiQuantidadePorCategoria() {
-        var labels = [];
         var data = [];
-        var i = -1;
         for (const Divergencia of Divergencias) {
             var Mes = Divergencia.DATAEMISSAO.split(" ")[0].split("-")[1];
             var Ano = Divergencia.DATAEMISSAO.split(" ")[0].split("-")[0];
             var label = Ano + "-" + Mes + "-01";
-            var found = labels.find((e) => e.label == label);
+            var found = data.find((e) => e.label == label);
 
             if (!found) {
-                i++;
-                labels.push({
-                    ID: i,
+                data.push({
+                    value: 1,
                     label: label
                 });
-                data.push({
-                    ID: i,
-                    value: 1
-                });
             } else {
-                data[found.ID].value++;
+                found.value++;
             }
         }
 
-        var array2 = [];
-
-        for (const label of labels) {
-            array2.push({
-                x: BuscaEpoch(label.label),
-                y: data[label.ID].value
-            });
-        }
-
-        array2 = array2.sort((a, b) => {
-            if (a.x > b.x) {
+        data = ComplementaMesesSemData(data);
+        data = data.sort((a, b) => {
+            if (a.label > b.label) {
                 return 1;
-            } else if (b.x > a.x) {
+            } else if (b.label > a.label) {
                 return -1;
             } else {
                 return 0;
             }
         });
 
+        var array2 = [];
+        for (const row of data) {
+            array2.push({
+                x: BuscaEpoch(row.label),
+                y: row.value
+            });
+        }
+
         var values = [];
         var backgroundColor = [];
-        var i = 0;
         for (const Categoria of array2) {
             values.push(Categoria);
-            backgroundColor.push(colors[i]);
-            i++;
+            backgroundColor.push(colors[0]);
         }
 
         return [values, backgroundColor];
+    }
+
+    function ComplementaMesesSemData(data) {
+        // Create a Set of all existing months in the data
+        let existingMonths = new Set(data.map((item) => item.label.slice(0, 7)));
+
+        // Get the minimum and maximum dates in the data
+        let minDate = data.reduce((min, item) => (item.label < min ? item.label : min), data[0].label);
+        let maxDate = data.reduce((max, item) => (item.label > max ? item.label : max), data[0].label);
+
+        // Convert the minimum and maximum dates to Date objects
+        let startDate = new Date(minDate);
+        let endDate = new Date(maxDate);
+
+        // Fill in the missing months
+        let filledData = [];
+
+        while (startDate <= endDate) {
+            let year = startDate.getFullYear();
+            let month = String(startDate.getMonth() + 1).padStart(2, "0");
+            let label = year + "-" + month;
+
+            if (!existingMonths.has(label)) {
+                filledData.push({
+                    value: 0,
+                    label: label + "-01"
+                });
+            }else{
+                var found = data.find(e=> e.label == label + "-01");
+                filledData.push(found);
+            }
+
+            startDate.setMonth(startDate.getMonth() + 1);
+        }
+
+        // Concatenate the filled data with the original data
+        return    filledData;
     }
 
     return (
@@ -1941,7 +1913,6 @@ function ComponenteChartQuantidadePorDataDeEmissao({ Divergencias }) {
         </div>
     );
 }
-
 
 // UTILS
 function Item({ ItemIndex, CodigoProduto, Produto, Quantidade, ValorUnit, CODUND }) {
